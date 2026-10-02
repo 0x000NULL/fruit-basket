@@ -1,0 +1,21 @@
+[package]
+name = "basket-app"
+description = "The emulator-independent half of a Fruit Basket frontend: audio output and pacing, save files, save-state slots, the settings file, the game library, gamepads and the window icon."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+basket-ui = { path = "../basket-ui", version = "0.1.0" }
+anyhow = "1"
+cpal = "0.15"
+dirs = "6"
+gilrs = "0.11"
+minifb = "0.28"
+png = "0.17"
+raw-window-handle = "0.6"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
