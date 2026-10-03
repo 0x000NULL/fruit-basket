@@ -18,11 +18,11 @@ implementations of `SaveRam`, `Snapshot` and `Platform`.
 
 ```toml
 [dependencies]
-basket-ui = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.1.0" }
-basket-app = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.1.0" }
+basket-ui = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.2.0" }
+basket-app = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.2.0" }
 
 [build-dependencies]
-basket-build = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.1.0" }
+basket-build = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.2.0" }
 ```
 
 Apps that pin their renders can enable `basket-ui`'s `testing` feature in their

@@ -101,6 +101,14 @@ impl Gamepads {
         Gamepads { gilrs, ports }
     }
 
+    /// The names of the connected pads, in connection order.
+    pub fn connected(&self) -> Vec<String> {
+        let Some(g) = self.gilrs.as_ref() else { return Vec::new() };
+        let mut pads: Vec<(usize, String)> = g.gamepads().map(|(id, pad)| (usize::from(id), pad.name().to_string())).collect();
+        pads.sort_by_key(|(id, _)| *id);
+        pads.into_iter().map(|(_, name)| name).collect()
+    }
+
     pub fn set_ports(&mut self, ports: Ports) {
         self.ports = ports;
     }
@@ -121,7 +129,13 @@ impl Gamepads {
         let uuids: Vec<[u8; 16]> = pads.iter().map(|(_, u)| *u).collect();
         let port_of = assign(&self.ports, &uuids);
         let port_for = |id: usize| pads.iter().position(|(p, _)| *p == id).and_then(|i| port_of[i]).filter(|p| *p < maps.len());
+        let mut plugged = (Vec::new(), Vec::new());
         while let Some(ev) = g.next_event() {
+            match ev.event {
+                EventType::Connected => plugged.0.push(g.gamepad(ev.id).name().to_string()),
+                EventType::Disconnected => plugged.1.push(g.gamepad(ev.id).name().to_string()),
+                _ => {}
+            }
             if let EventType::ButtonPressed(b, _) = ev.event {
                 let Some(p) = (if self.ports == Ports::Shared { Some(0).filter(|_| !maps.is_empty()) } else { port_for(usize::from(ev.id)) }) else { continue };
                 if b != Button::Unknown && !out[p].pressed.contains(&b) {
@@ -137,6 +151,11 @@ impl Gamepads {
             let y = pad.value(Axis::LeftStickY);
             out[p].mask |= stick_to_dpad(x, y, STICK_DEADZONE, &map.set().roles);
         }
+        // Plugging is per machine, not per port: every poll reports it.
+        for poll in out.iter_mut() {
+            poll.connected.clone_from(&plugged.0);
+            poll.disconnected.clone_from(&plugged.1);
+        }
         out
     }
 }
@@ -148,6 +167,11 @@ pub struct PadPoll {
     pub mask: u16,
     /// Buttons that went down since the last poll.
     pub pressed: Vec<Button>,
+    /// Names of the pads plugged in since the last poll (some backends also report the pads
+    /// already there at start; use [`Gamepads::connected`] for the current list).
+    pub connected: Vec<String>,
+    /// Names of the pads unplugged since the last poll.
+    pub disconnected: Vec<String>,
 }
 
 #[cfg(test)]
