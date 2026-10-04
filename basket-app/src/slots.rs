@@ -1,4 +1,6 @@
-//! Save-state slots 1..=8 per game: `<rom stem>.s<N>.state` beside the ROM.
+//! Save-state slots 1..=8 per game: `<rom stem>.s<N>.state` beside the ROM, and, when the
+//! machine can give its picture as RGB ([`Snapshot::picture_rgb`]), `<rom stem>.s<N>.png` beside
+//! that (for the Fruit Basket launcher, which cannot read the header's picture).
 //!
 //! File format (little-endian; documented in `docs/ARCHITECTURE.md`):
 //! ```text
@@ -46,6 +48,11 @@ pub trait Snapshot {
     fn frame_count(&self) -> u64;
     /// The current picture, `frame_w * frame_h` texels.
     fn picture(&self) -> &[u16];
+    /// The current picture as packed RGB8, `frame_w * frame_h * 3` bytes, written as the slot's
+    /// `.png`. None (the default) = no picture file.
+    fn picture_rgb(&self) -> Option<Vec<u8>> {
+        None
+    }
 }
 
 /// Slot metadata read from a slot file's header.
@@ -97,6 +104,24 @@ impl From<std::io::Error> for SlotError {
 pub fn slot_path(rom: &Path, slot: u8) -> PathBuf {
     let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "game".into());
     rom.with_file_name(format!("{stem}.s{slot}.state"))
+}
+
+/// `<rom stem>.s<N>.png` beside the ROM: the slot's picture as a PNG.
+pub fn picture_path(rom: &Path, slot: u8) -> PathBuf {
+    slot_path(rom, slot).with_extension("png")
+}
+
+/// Encode packed RGB8 as an 8-bit RGB PNG.
+pub fn encode_png(w: usize, h: usize, rgb: &[u8]) -> Result<Vec<u8>> {
+    if rgb.len() != w * h * 3 {
+        return Err(anyhow!("picture is {} bytes, {w}x{h} RGB needs {}", rgb.len(), w * h * 3));
+    }
+    let mut out = Vec::new();
+    let mut enc = png::Encoder::new(&mut out, w as u32, h as u32);
+    enc.set_color(png::ColorType::Rgb);
+    enc.set_depth(png::BitDepth::Eight);
+    enc.write_header()?.write_image_data(rgb)?;
+    Ok(out)
 }
 
 pub fn now_secs() -> i64 {
@@ -214,6 +239,13 @@ impl SlotFormat {
         let body = machine.save_state();
         let bytes = self.encode(machine.frame_count(), now_secs(), play_secs.min(u32::MAX as u64) as u32, machine.picture(), &body);
         write_atomic(&path, &bytes)?;
+        if let Some(rgb) = machine.picture_rgb() {
+            // the state is what matters: a picture that cannot be written is only a warning
+            let pic = picture_path(rom, slot);
+            if let Err(e) = encode_png(self.frame_w, self.frame_h, &rgb).and_then(|png| write_atomic(&pic, &png)) {
+                eprintln!("warning: slot picture {}: {e:#}", pic.display());
+            }
+        }
         self.read_meta(rom, slot).map_err(|e| anyhow!("{e}"))
     }
 
@@ -257,13 +289,16 @@ impl SlotFormat {
     }
 }
 
+/// Delete a slot's state and its picture.
 pub fn delete(rom: &Path, slot: u8) -> Result<()> {
-    let path = slot_path(rom, slot);
-    match std::fs::remove_file(&path) {
-        Ok(()) => Ok(()),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(e) => Err(anyhow!("deleting {}: {e}", path.display())),
+    for path in [slot_path(rom, slot), picture_path(rom, slot)] {
+        match std::fs::remove_file(&path) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(anyhow!("deleting {}: {e}", path.display())),
+        }
     }
+    Ok(())
 }
 
 /// All eight slots of a game.
@@ -315,6 +350,8 @@ mod tests {
     struct Counter {
         n: u64,
         pic: Vec<u16>,
+        /// texels of RGB picture to give (None = no picture)
+        rgb: Option<usize>,
     }
 
     impl Snapshot for Counter {
@@ -330,6 +367,9 @@ mod tests {
         }
         fn picture(&self) -> &[u16] {
             &self.pic
+        }
+        fn picture_rgb(&self) -> Option<Vec<u8>> {
+            self.rgb.map(|n| self.pic.iter().take(n).flat_map(|&p| [p as u8, 0, 0xFF]).collect())
         }
     }
 
@@ -349,7 +389,7 @@ mod tests {
     #[test]
     fn round_trip_save_load_delete() {
         let rom = temp_rom("rt");
-        let mut m = Counter { n: 3, pic: vec![1, 2, 3, 4, 5, 6, 7, 0x8008] };
+        let mut m = Counter { n: 3, pic: vec![1, 2, 3, 4, 5, 6, 7, 0x8008], rgb: None };
         let meta = FMT.save(&m, &rom, 2, 458).unwrap();
         assert_eq!((meta.slot, meta.frame, meta.play_secs, meta.core_ver), (2, 3, 458, 7));
         assert_eq!(meta.emulator, "test 0.1");
@@ -365,9 +405,30 @@ mod tests {
         let m2 = FMT.load(&mut m, &rom, 2).unwrap();
         assert_eq!((m.n, m2.frame), (3, 3));
         assert!(matches!(FMT.load(&mut m, &rom, 3), Err(SlotError::Missing)));
+        assert!(!picture_path(&rom, 2).exists(), "no RGB picture, no .png");
         delete(&rom, 2).unwrap();
         assert!(matches!(FMT.read_meta(&rom, 2), Err(SlotError::Missing)));
         delete(&rom, 2).unwrap();
+    }
+
+    #[test]
+    fn picture_png_beside_the_state_and_deleted_with_it() {
+        let rom = temp_rom("png");
+        assert_eq!(picture_path(&rom, 3), rom.with_file_name("game.s3.png"));
+        let m = Counter { n: 1, pic: vec![10, 20, 30, 40, 50, 60, 70, 80], rgb: Some(8) };
+        FMT.save(&m, &rom, 3, 0).unwrap();
+        let file = std::fs::File::open(picture_path(&rom, 3)).unwrap();
+        let mut reader = png::Decoder::new(file).read_info().unwrap();
+        let mut buf = vec![0u8; reader.output_buffer_size()];
+        let info = reader.next_frame(&mut buf).unwrap();
+        assert_eq!((info.width, info.height, info.color_type, info.bit_depth), (4, 2, png::ColorType::Rgb, png::BitDepth::Eight));
+        assert_eq!(&buf[..6], &[10, 0, 0xFF, 20, 0, 0xFF]);
+        delete(&rom, 3).unwrap();
+        assert!(!slot_path(&rom, 3).exists() && !picture_path(&rom, 3).exists());
+        // a wrong-sized picture does not cost the state
+        let bad = Counter { n: 1, pic: vec![0; 8], rgb: Some(3) };
+        FMT.save(&bad, &rom, 4, 0).unwrap();
+        assert!(slot_path(&rom, 4).exists() && !picture_path(&rom, 4).exists());
     }
 
     #[test]
@@ -390,7 +451,7 @@ mod tests {
         std::fs::write(slot_path(&rom, 4), other.encode(1, 0, 1, &[0; 8], &[0; 8])).unwrap();
         assert!(matches!(FMT.read_meta(&rom, 4), Err(SlotError::Corrupt(_))));
         std::fs::write(slot_path(&rom, 5), FMT.encode(1, 0, 1, &[0; 8], b"short")).unwrap();
-        let mut m = Counter { n: 0, pic: vec![0; 8] };
+        let mut m = Counter { n: 0, pic: vec![0; 8], rgb: None };
         assert!(matches!(FMT.load(&mut m, &rom, 5), Err(SlotError::CantLoad(_))));
         // a different picture size is a different format
         let big = SlotFormat { frame_w: 8, ..FMT };

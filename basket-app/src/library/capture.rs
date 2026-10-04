@@ -4,6 +4,10 @@
 //! cached title capture `<cache_dir>/captures/<code>-<hash of path>.png` -> none (the cartridge
 //! gets a plain colour label). Captures ([`Platform::capture_title`]) are produced by ONE
 //! background thread, one game at a time, only after every cheap lookup has been answered.
+//!
+//! Every capture found or made is also copied to `<cache_dir>/covers/<rom stem>.png`, a name the
+//! Fruit Basket launcher can work out without the path hash (two ROMs with one stem: the last
+//! copied wins).
 
 use super::Platform;
 use std::collections::VecDeque;
@@ -72,6 +76,33 @@ pub fn capture_file_name(code: &str, path: &Path) -> String {
 
 pub fn captures_dir(cache_dir: &Path) -> PathBuf {
     cache_dir.join("captures")
+}
+
+/// `<cache_dir>/covers`, from the captures directory beside it.
+pub fn covers_dir(captures: &Path) -> PathBuf {
+    captures.parent().unwrap_or(captures).join("covers")
+}
+
+/// `<covers>/<rom stem>.png`.
+pub fn cover_path(captures: &Path, rom: &Path) -> PathBuf {
+    let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "game".into());
+    covers_dir(captures).join(format!("{stem}.png"))
+}
+
+/// Copy a capture to the game's cover (temp file + rename), unless an identical-sized one is
+/// already there. Failures are warnings: the cover is a courtesy to the launcher.
+pub fn write_cover(captures: &Path, rom: &Path, capture: &Path) {
+    let cover = cover_path(captures, rom);
+    let len = |p: &Path| std::fs::metadata(p).map(|m| m.len()).ok();
+    if len(&cover).is_some() && len(&cover) == len(capture) {
+        return;
+    }
+    let tmp = cover.with_extension("png.tmp");
+    let copied = std::fs::create_dir_all(covers_dir(captures)).and_then(|_| std::fs::copy(capture, &tmp)).and_then(|_| std::fs::rename(&tmp, &cover));
+    if let Err(e) = copied {
+        let _ = std::fs::remove_file(&tmp);
+        eprintln!("warning: cover {}: {e}", cover.display());
+    }
 }
 
 /// Decode a capture PNG (8-bit RGB or RGBA).
@@ -153,6 +184,7 @@ fn worker(rx: Receiver<ArtJob>, tx: Sender<ArtMsg>, captures: Option<PathBuf>, p
                 let Some(dir) = &captures else { continue };
                 let file = dir.join(capture_file_name(&code, &path));
                 if let Some(art) = read_png(&file) {
+                    write_cover(dir, &path, &file);
                     if !send(path, art, ArtSource::Capture) {
                         return;
                     }
@@ -175,6 +207,7 @@ fn worker(rx: Receiver<ArtJob>, tx: Sender<ArtMsg>, captures: Option<PathBuf>, p
                 let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| platform.capture_title(&path, &file)));
                 match run {
                     Ok(Ok(art)) => {
+                        write_cover(dir, &path, &file);
                         if !send(path, art, ArtSource::Capture) {
                             return;
                         }
@@ -203,6 +236,26 @@ mod tests {
         assert_ne!(n, capture_file_name("B8CE", Path::new("D:/other/Kingdom Hearts.zip")), "path-specific");
         assert_eq!(capture_file_name("A/B?", p).split('-').next().unwrap(), "A_B_");
         assert!(capture_file_name("", p).starts_with("XXXX-"));
+    }
+
+    #[test]
+    fn covers_are_named_by_stem_beside_captures() {
+        let cache = std::env::temp_dir().join(format!("basket-covers-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&cache);
+        let captures = captures_dir(&cache);
+        std::fs::create_dir_all(&captures).unwrap();
+        let rom = Path::new("C:/Games/Super Mario Bros. (World).zip");
+        let cap = captures.join(capture_file_name("3337EC46", rom));
+        std::fs::write(&cap, b"first").unwrap();
+        assert_eq!(cover_path(&captures, rom), cache.join("covers").join("Super Mario Bros. (World).png"));
+        write_cover(&captures, rom, &cap);
+        assert_eq!(std::fs::read(cover_path(&captures, rom)).unwrap(), b"first");
+        // a capture that changed replaces the cover; the temp file never stays behind
+        std::fs::write(&cap, b"second!").unwrap();
+        write_cover(&captures, rom, &cap);
+        assert_eq!(std::fs::read(cover_path(&captures, rom)).unwrap(), b"second!");
+        assert_eq!(std::fs::read_dir(cache.join("covers")).unwrap().count(), 1);
+        let _ = std::fs::remove_dir_all(&cache);
     }
 
     #[test]
