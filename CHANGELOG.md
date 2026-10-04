@@ -3,6 +3,18 @@
 All three crates (`basket-ui`, `basket-app`, `basket-build`) share one version and one tag. Apps
 pin them by git tag (see the README).
 
+## Unreleased
+
+Docs only; no crate changes. `docs/LAUNCHER-CONTRACT.md` after the v0.4.0 tag:
+
+- `notes` and `assets` describe what feedgen.py actually emits; the four platforms are the ones in
+  use, not a whitelist.
+- A template's flags must exist in every build the feed lists, from `oldest` up; a key that would
+  only repeat `launch` is left out rather than `oldest` raised.
+- In an extra folder, a file whose extension several fruits list goes to the first fruit in feed
+  order; overlaps must be resolved before the second such fruit ships.
+- `couch`: the "only listed builds" rule is launcher v0.5.1 behaviour (was an unexplained "(v0.5.1)").
+
 ## v0.4.0 (2026-10-03)
 
 A coordinated dependency refresh. No fruit-basket type, function or module was renamed, moved or

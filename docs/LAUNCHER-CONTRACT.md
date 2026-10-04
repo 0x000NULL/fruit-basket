@@ -36,7 +36,7 @@ Templates are argument lists: each word becomes one argument after its placehold
 | `launch` | no | The arguments that start a game. Default `{rom}`. | `{rom}` `{slot}` `{data}` | v0.3.0 |
 | `load_slot` | no | The arguments that start a game from a save slot. Without it, the launcher cannot load saves. | `{rom}` `{slot}` `{data}` | v0.5.0 |
 | `open` | no | The arguments that open the fruit with no game. | `{rom}` `{slot}` `{data}` | v0.4.0 |
-| `couch` | no | Arguments added after the filled `launch` or `load_slot` when a game starts from couch mode, never after `open`. They go only to builds the feed still lists (v0.5.1), so set `oldest` to the first build that takes them. | `{rom}` `{slot}` `{data}` | v0.5.0 |
+| `couch` | no | Arguments added after the filled `launch` or `load_slot` when a game starts from couch mode, never after `open`. Since launcher v0.5.1 they go only to builds the feed still lists, so set `oldest` to the first build that takes them. | `{rom}` `{slot}` `{data}` | v0.5.0 |
 | `fresh` | no | The arguments Start fresh uses in place of `launch`, for a fruit that would otherwise resume where it left off. Without it, Start fresh uses `launch`. Couch mode adds `couch` after them. | `{rom}` `{slot}` `{data}` | v1.1.2 |
 | `carry` | no | Files the emulator keeps beside its exe, moved into each new build so they survive an update. If any template uses `{data}`, they move into the data folder once instead. | none | v0.2.0 (into the data folder from v0.4.0) |
 | `art` | no | Where the emulator keeps a game's cover picture: PNG paths, tried in order. Read only as pictures. A path with a placeholder that has nothing to fill it is skipped. | `{rom_dir}` `{stem}` `{data}` `{code}` `{cache}` | v1.1.0 |
