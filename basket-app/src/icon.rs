@@ -26,12 +26,11 @@ pub fn install(window: &mut minifb::Window, cache_dir: Option<&Path>, icon: &Ico
     use std::os::windows::ffi::OsStrExt;
     let Some(dir) = cache_dir else { return };
     let path = dir.join(icon.ico_name);
-    if std::fs::read(&path).ok().as_deref() != Some(icon.ico) {
-        if let Err(e) = std::fs::create_dir_all(dir).and_then(|_| std::fs::write(&path, icon.ico)) {
+    if std::fs::read(&path).ok().as_deref() != Some(icon.ico)
+        && let Err(e) = std::fs::create_dir_all(dir).and_then(|_| std::fs::write(&path, icon.ico)) {
             eprintln!("warning: window icon not written: {e}");
             return;
         }
-    }
     // minifb copies the path inside `set_icon` (GetFullPathNameW + LoadImageW). Its own
     // `Icon::from_str` returns a pointer into a local Vec, so the path is built here instead.
     let wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
@@ -84,16 +83,16 @@ pub fn net_wm_icon(icon: &Icon) -> Vec<u64> {
 
 /// PNG bytes -> (w, h, 0xAARRGGBB per pixel); 8-bit RGB or RGBA only.
 pub fn decode_argb(bytes: &[u8]) -> Option<(u32, u32, Vec<u32>)> {
-    let mut reader = png::Decoder::new(bytes).read_info().ok()?;
-    let mut buf = vec![0u8; reader.output_buffer_size()];
+    let mut reader = png::Decoder::new(std::io::Cursor::new(bytes)).read_info().ok()?;
+    let mut buf = vec![0u8; reader.output_buffer_size()?];
     let info = reader.next_frame(&mut buf).ok()?;
     if info.bit_depth != png::BitDepth::Eight {
         return None;
     }
     let px = &buf[..info.buffer_size()];
     let argb: Vec<u32> = match info.color_type {
-        png::ColorType::Rgba => px.chunks_exact(4).map(|p| (p[3] as u32) << 24 | (p[0] as u32) << 16 | (p[1] as u32) << 8 | p[2] as u32).collect(),
-        png::ColorType::Rgb => px.chunks_exact(3).map(|p| 0xFF00_0000 | (p[0] as u32) << 16 | (p[1] as u32) << 8 | p[2] as u32).collect(),
+        png::ColorType::Rgba => px.as_chunks::<4>().0.iter().map(|p| (p[3] as u32) << 24 | (p[0] as u32) << 16 | (p[1] as u32) << 8 | p[2] as u32).collect(),
+        png::ColorType::Rgb => px.as_chunks::<3>().0.iter().map(|p| 0xFF00_0000 | (p[0] as u32) << 16 | (p[1] as u32) << 8 | p[2] as u32).collect(),
         _ => return None,
     };
     Some((info.width, info.height, argb))

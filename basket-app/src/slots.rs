@@ -202,7 +202,7 @@ impl SlotFormat {
             return Err(SlotError::Corrupt("header length mismatch".into()));
         }
         let emulator = String::from_utf8_lossy(&bytes[38..name_end]).into_owned();
-        let fb = bytes[name_end..fb_end].chunks_exact(2).map(|b| u16::from_le_bytes([b[0], b[1]])).collect();
+        let fb = bytes[name_end..fb_end].as_chunks::<2>().0.iter().map(|b| u16::from_le_bytes([b[0], b[1]])).collect();
         Ok(Parsed { frame, saved_at, play_secs, core_ver, emulator, fb, body_at: header_len })
     }
 
@@ -418,8 +418,8 @@ mod tests {
         let m = Counter { n: 1, pic: vec![10, 20, 30, 40, 50, 60, 70, 80], rgb: Some(8) };
         FMT.save(&m, &rom, 3, 0).unwrap();
         let file = std::fs::File::open(picture_path(&rom, 3)).unwrap();
-        let mut reader = png::Decoder::new(file).read_info().unwrap();
-        let mut buf = vec![0u8; reader.output_buffer_size()];
+        let mut reader = png::Decoder::new(std::io::BufReader::new(file)).read_info().unwrap();
+        let mut buf = vec![0u8; reader.output_buffer_size().unwrap()];
         let info = reader.next_frame(&mut buf).unwrap();
         assert_eq!((info.width, info.height, info.color_type, info.bit_depth), (4, 2, png::ColorType::Rgb, png::BitDepth::Eight));
         assert_eq!(&buf[..6], &[10, 0, 0xFF, 20, 0, 0xFF]);

@@ -109,7 +109,7 @@ pub fn write_cover(captures: &Path, rom: &Path, capture: &Path) {
 pub fn read_png(path: &Path) -> Option<Art> {
     let file = std::fs::File::open(path).ok()?;
     let mut reader = png::Decoder::new(std::io::BufReader::new(file)).read_info().ok()?;
-    let mut buf = vec![0u8; reader.output_buffer_size()];
+    let mut buf = vec![0u8; reader.output_buffer_size()?];
     let info = reader.next_frame(&mut buf).ok()?;
     if info.bit_depth != png::BitDepth::Eight {
         return None;
@@ -118,7 +118,7 @@ pub fn read_png(path: &Path) -> Option<Art> {
     let px = &buf[..info.buffer_size()];
     let rgb: Vec<u8> = match info.color_type {
         png::ColorType::Rgb => px.to_vec(),
-        png::ColorType::Rgba => px.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2]]).collect(),
+        png::ColorType::Rgba => px.as_chunks::<4>().0.iter().flat_map(|p| [p[0], p[1], p[2]]).collect(),
         png::ColorType::Grayscale => px.iter().flat_map(|&g| [g, g, g]).collect(),
         _ => return None,
     };
@@ -193,11 +193,10 @@ fn worker(rx: Receiver<ArtJob>, tx: Sender<ArtMsg>, captures: Option<PathBuf>, p
                 }
             }
             Some(ArtJob::Refresh { path }) => {
-                if let Some(art) = platform.slot_art(&path) {
-                    if !send(path, art, ArtSource::Slot) {
+                if let Some(art) = platform.slot_art(&path)
+                    && !send(path, art, ArtSource::Slot) {
                         return;
                     }
-                }
             }
             None => {
                 let Some((path, code)) = heavy.pop_front() else { continue };

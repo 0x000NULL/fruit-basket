@@ -1,11 +1,11 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = ["basket-ui", "basket-app", "basket-build"]
 
 [workspace.package]
-version = "0.3.0"
-edition = "2021"
+version = "0.4.0"
+edition = "2024"
 license = "MIT"
 authors = ["Ethan Aldrich"]
 repository = "https://github.com/0x000NULL/fruit-basket"
-rust-version = "1.82"
+rust-version = "1.89"

@@ -199,7 +199,7 @@ impl AudioOut {
     pub fn list_devices() -> Vec<String> {
         let host = cpal::default_host();
         match host.output_devices() {
-            Ok(it) => it.filter_map(|d| d.name().ok()).collect(),
+            Ok(it) => it.filter_map(|d| device_name(&d)).collect(),
             Err(_) => Vec::new(),
         }
     }
@@ -208,7 +208,7 @@ impl AudioOut {
     /// of `buffering.ring_secs` that audio-clocked pacing keeps near `buffering.target_secs`.
     pub fn open_on(src_rate: f64, muted: bool, name: Option<&str>, buffering: Buffering) -> Result<AudioOut> {
         let host = cpal::default_host();
-        let named = name.and_then(|n| host.output_devices().ok()?.find(|d| d.name().map(|dn| dn == n).unwrap_or(false)));
+        let named = name.and_then(|n| host.output_devices().ok()?.find(|d| device_name(d).is_some_and(|dn| dn == n)));
         if name.is_some() && named.is_none() {
             eprintln!("warning: audio device {:?} not found; using the default", name.unwrap_or(""));
         }
@@ -219,7 +219,7 @@ impl AudioOut {
         let supported = device.default_output_config().context("querying default output config")?;
         let sample_format = supported.sample_format();
         let config: StreamConfig = supported.config();
-        let device_rate = config.sample_rate.0;
+        let device_rate = config.sample_rate;
         let channels = config.channels;
         if channels == 0 {
             return Err(anyhow!("output device reports zero channels"));
@@ -234,17 +234,26 @@ impl AudioOut {
             gain: AtomicU32::new(1.0f32.to_bits()),
         });
 
+        // cpal 0.18 ranks integer formats by width (I32 > I24 > I16), so a device without F32 can
+        // now report any of these as its default; every one is converted from the same f32 frame.
         let stream = match sample_format {
-            SampleFormat::F32 => build_stream::<f32>(&device, &config, shared.clone()),
-            SampleFormat::I16 => build_stream::<i16>(&device, &config, shared.clone()),
-            SampleFormat::U16 => build_stream::<u16>(&device, &config, shared.clone()),
-            SampleFormat::I32 => build_stream::<i32>(&device, &config, shared.clone()),
-            SampleFormat::F64 => build_stream::<f64>(&device, &config, shared.clone()),
+            SampleFormat::F32 => build_stream::<f32>(&device, config, shared.clone()),
+            SampleFormat::F64 => build_stream::<f64>(&device, config, shared.clone()),
+            SampleFormat::I8 => build_stream::<i8>(&device, config, shared.clone()),
+            SampleFormat::I16 => build_stream::<i16>(&device, config, shared.clone()),
+            SampleFormat::I24 => build_stream::<cpal::I24>(&device, config, shared.clone()),
+            SampleFormat::I32 => build_stream::<i32>(&device, config, shared.clone()),
+            SampleFormat::I64 => build_stream::<i64>(&device, config, shared.clone()),
+            SampleFormat::U8 => build_stream::<u8>(&device, config, shared.clone()),
+            SampleFormat::U16 => build_stream::<u16>(&device, config, shared.clone()),
+            SampleFormat::U24 => build_stream::<cpal::U24>(&device, config, shared.clone()),
+            SampleFormat::U32 => build_stream::<u32>(&device, config, shared.clone()),
+            SampleFormat::U64 => build_stream::<u64>(&device, config, shared.clone()),
             other => Err(anyhow!("unsupported device sample format {other:?}")),
         }?;
         stream.play().context("starting audio stream")?;
 
-        let device_name = device.name().unwrap_or_else(|_| "<unknown>".into());
+        let device_name = device_name(&device).unwrap_or_else(|| "<unknown>".into());
         println!(
             "audio: {} @ {} Hz, {} ch, {:?}, ring {} frames, target {} frames",
             device_name,
@@ -345,12 +354,32 @@ impl AudioOut {
     }
 }
 
-fn build_stream<T>(device: &cpal::Device, config: &StreamConfig, shared: Arc<Shared>) -> Result<cpal::Stream>
+/// The name a device is listed, saved and matched under. ALSA keeps its PCM id (`default`,
+/// `hw:CARD=PCH,DEV=0`), which is what cpal 0.15's `Device::name` returned there, so settings
+/// files written before cpal 0.18 still find their device; elsewhere it is the description name
+/// (the WASAPI friendly name, the CoreAudio device name), the same string as before.
+fn device_name(device: &cpal::Device) -> Option<String> {
+    #[cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd"))]
+    if let Ok(id) = device.id()
+        && id.host() == cpal::HostId::Alsa
+    {
+        return Some(id.id().to_string());
+    }
+    device.description().ok().map(|d| d.name().to_string())
+}
+
+fn build_stream<T>(device: &cpal::Device, config: StreamConfig, shared: Arc<Shared>) -> Result<cpal::Stream>
 where
     T: SizedSample + FromSample<f32>,
 {
     let channels = config.channels as usize;
-    let err_fn = |e| eprintln!("audio stream error: {e}");
+    // Underruns are counted by the callback itself; cpal 0.17+ also reports xruns here on some
+    // backends, which cpal 0.15 kept quiet about, so they are not printed.
+    let err_fn = |e: cpal::Error| {
+        if e.kind() != cpal::ErrorKind::Xrun {
+            eprintln!("audio stream error: {e}");
+        }
+    };
     let stream = device
         .build_output_stream(
             config,

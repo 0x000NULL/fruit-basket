@@ -22,3 +22,13 @@ jobs:
       - name: Linux build dependencies (ALSA for cpal, udev for gilrs)
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev
       - run: cargo test --workspace
+
+  msrv:
+    # The workspace rust-version, built from the committed lockfile.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.89
+      - name: Linux build dependencies (ALSA for cpal, udev for gilrs)
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev
+      - run: cargo test --workspace --locked

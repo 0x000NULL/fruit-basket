@@ -1,8 +1,8 @@
 # fruit-basket
 
 The shared frontend crates of the Fruit Basket emulators (Strawberry, a Game Boy Advance
-emulator, and Crabapple, an NES emulator): one design language, one software renderer, and the
-desktop plumbing every emulator needs, written once.
+emulator, and Crabapple, an NES emulator) and of the Fruit Basket launcher: one design language,
+one software renderer, and the desktop plumbing every emulator needs, written once.
 
 | crate | what it is |
 |---|---|
@@ -18,18 +18,33 @@ implementations of `SaveRam`, `Snapshot` and `Platform`.
 
 ```toml
 [dependencies]
-basket-ui = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.3.0" }
-basket-app = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.3.0" }
+basket-ui = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.4.0" }
+basket-app = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.4.0" }
 
 [build-dependencies]
-basket-build = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.3.0" }
+basket-build = { git = "https://github.com/0x000NULL/fruit-basket", tag = "v0.4.0" }
 ```
 
 Apps that pin their renders can enable `basket-ui`'s `testing` feature in their
 dev-dependencies: it exposes `Canvas::data` and `fmt::test_clock` (a frozen UTC clock, so date
 text does not depend on the host).
 
+The crates use edition 2024 and need Rust 1.89 or later. They expose `minifb`, `tiny-skia`,
+`gilrs` and `toml` types in their API, so an app pins those crates at the majors in
+[docs/DEPS.md](docs/DEPS.md); [CHANGELOG.md](CHANGELOG.md) lists what changed in each release.
+
 Linux builds need ALSA and udev headers (`libasound2-dev libudev-dev`).
+
+## Docs
+
+- [CHANGELOG.md](CHANGELOG.md): every release, and what an app fixes when it re-pins.
+- [docs/ECOSYSTEM.md](docs/ECOSYSTEM.md): every fruit, the launcher, this repo and the site, and
+  who depends on what.
+- [docs/LAUNCHER-CONTRACT.md](docs/LAUNCHER-CONTRACT.md): the `LAUNCHER` file keys, the feed's
+  fields, and the flags and files a fruit must support.
+- [docs/RELEASING.md](docs/RELEASING.md): the release order from a fruit-basket tag to the signed
+  feed.
+- [docs/DEPS.md](docs/DEPS.md): the shared dependency versions and how to bump them together.
 
 ## License
 

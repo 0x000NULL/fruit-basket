@@ -274,12 +274,11 @@ impl PadRepeat {
                 self.last_fire[i] = Some(now);
                 continue;
             }
-            if let (Some(since), Some(last)) = (self.held_since[i], self.last_fire[i]) {
-                if now.duration_since(since) >= PAD_REPEAT_DELAY && now.duration_since(last) >= PAD_REPEAT_RATE {
+            if let (Some(since), Some(last)) = (self.held_since[i], self.last_fire[i])
+                && now.duration_since(since) >= PAD_REPEAT_DELAY && now.duration_since(last) >= PAD_REPEAT_RATE {
                     repeated |= bit;
                     self.last_fire[i] = Some(now);
                 }
-            }
         }
         self.prev = mask;
         (pressed, repeated)

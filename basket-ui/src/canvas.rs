@@ -453,7 +453,7 @@ impl Canvas {
         let data = self.pix.data();
         out.clear();
         out.reserve(data.len() / 4);
-        for p in data.chunks_exact(4) {
+        for p in data.as_chunks::<4>().0 {
             out.push((p[0] as u32) << 16 | (p[1] as u32) << 8 | p[2] as u32);
         }
     }

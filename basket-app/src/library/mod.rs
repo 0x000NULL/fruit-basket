@@ -273,11 +273,10 @@ impl Library {
     }
 
     fn save_index(&self) {
-        if let Some(dir) = &self.cache_dir {
-            if let Err(e) = self.index.save(dir) {
+        if let Some(dir) = &self.cache_dir
+            && let Err(e) = self.index.save(dir) {
                 eprintln!("warning: library index: {e:#}");
             }
-        }
     }
 
     pub fn entries(&self) -> &[LibraryEntry] {
