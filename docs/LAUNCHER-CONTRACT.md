@@ -162,9 +162,9 @@ are present since launcher v0.1.0 unless the table says otherwise.
 |---|---|---|
 | `build` | string | A release tag (`v1.5.0`) or a nightly's commit. |
 | `date` | string or null | `YYYY-MM-DD`. |
-| `notes` | string[] | Release notes: the changelog line for the build, split on `; `. |
+| `notes` | string[] | Release notes: the build's changelog line with its lead-in (`Release vX:` / `Nightly build at X`) dropped, split on `; `, parts starting `builds in ` dropped, each part's first letter capitalised. `[]` when no changelog line matches. |
 | `notes_url` | string | The release's `README`, or for a nightly the fruit's `CHANGELOG.txt`. |
-| `assets` | object | Keyed by platform: `windows-x64`, `macos-arm64`, `macos-x64`, `linux-x64`. |
+| `assets` | object | Keyed by platform, `<os>-<arch>` (in use today: `windows-x64`, `macos-arm64`, `macos-x64`, `linux-x64`). Not a whitelist: a release's keys come from its `DESCRIPTIONS` labels (`Windows\|macOS\|Linux <arch>`, lowercased; other labels are not builds), and a nightly's key is its `NIGHTLY` `platform` value as written. Shipping all four platforms for a launcher release is a site process rule, not a feed check. |
 
 An asset is `{name, url, size, sha256}`. The SHA-256 is hashed from the file itself, and the
 launcher checks every download against it. A file reference (`compat`, `dumps`) is
