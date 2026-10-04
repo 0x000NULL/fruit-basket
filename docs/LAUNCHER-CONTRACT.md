@@ -26,7 +26,7 @@ Templates are argument lists: each word becomes one argument after its placehold
 |---|---|---|---|---|
 | `no` | yes | The fruit's number, a whole number. No two fruits may share one. The feed is sorted by it. | none | v0.1.0 |
 | `system` | yes | The console, as shown (`GBA`, `GB · GBC`). | none | v0.1.0 |
-| `ext` | yes | The file extensions the fruit plays, with the dot (`.chd .iso`). Matched case-insensitively against the end of the file name. | none | v0.1.0 |
+| `ext` | yes | The file extensions the fruit plays, with the dot (`.chd .iso`). Matched case-insensitively against the end of the file name. In a fruit's own `games/` folder that is enough; in an extra folder a file goes to the *first* fruit in feed order that lists its extension, so overlapping `ext` lists between fruits (today `.cue .chd .iso` between Pomegranate and the growing Fig and Mangosteen) send the file to the lower-numbered fruit. Resolve overlaps before the second fruit ships. | none | v0.1.0 |
 | `status` | yes | `released` or `growing`. A growing fruit must have no builds; a released one must have at least one. | none | v0.1.0 |
 | `blurb` | yes | One or two sentences about the fruit's name and mark. | none | v0.1.0 |
 | `bin` | when `released` | The emulator's executable name, without `.exe`. | none | v0.2.0 |
