@@ -186,6 +186,12 @@ A fruit can use other flags in its templates (Pomegranate's `play {rom} --data {
 these four are the ones the launcher's features rely on. A fruit adds a flag to its templates only
 in the release that introduces it, and raises `oldest` with it.
 
+Every template in the feed is handed to every build the feed lists, from `oldest` up, and the
+fruits reject unknown flags. So before adding a key whose template uses a new flag, check the flag
+exists in every listed build, not just the newest. If the key would only repeat `launch` (Strawberry
+never resumes, so its `fresh` would equal `launch`), leave it out rather than raise `oldest`: the
+launcher already falls back to `launch`.
+
 ## Files a fruit writes
 
 The launcher finds a game's saves and pictures by name, so a fruit names them like this. `<stem>`
