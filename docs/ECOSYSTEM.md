@@ -56,6 +56,14 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
   `feed.json`: every fruit, every build with its SHA-256 and size, and the launcher's own newest
   release. The feed is signed with minisign (`feed.json.minisig`, key ID `9A7C56F99E6460E9`).
   The launcher trusts a build only when its hash is in a feed whose signature checks out.
+- **Fruit Basket for iOS**: repo `fruit-basket-ios` (private), App Store name "Fruit Basket Emu",
+  on TestFlight since 2026-10-04. One SwiftUI app with Strawberry and Crabapple built in: the App
+  Store forbids downloading code, so it does not use the feed, the `LAUNCHER` files or the
+  launcher's install flow, and its Basket tab lists the built-in and growing fruits. It links
+  each core in-process through a C ABI (`gba-ffi` in GBA_Emulator, `nes-ffi` in crabapple, both
+  pinned by git rev; the contract is the iOS repo's `docs/CORE-ABI.md`). It uses none of the
+  fruit-basket crates. Its design comes from the mobile mockups and their token file, a sibling of
+  `basket-ui/tokens.json`. No PS2 for now.
 
 ## Who depends on what
 
@@ -87,6 +95,9 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
 - The launcher depends on every fruit only through the feed: the `LAUNCHER` contract and each
   fruit's command-line flags and file names. It never links against a fruit.
 - The site depends on GitHub releases from every fruit and from the launcher.
+- The iOS app depends on `gba-core` and `nes-core` through `gba-ffi` and `nes-ffi`, not on this
+  repo. A change to either core's save-state format breaks iOS players' states (the app falls
+  back to the battery save); a change to an `fb_*` signature needs a CORE-ABI version bump.
 
 [RELEASING.md](RELEASING.md) gives the order a coordinated release goes in, and
 [DEPS.md](DEPS.md) the dependency versions the Rust repos share.

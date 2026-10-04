@@ -15,6 +15,9 @@ Docs only; no crate changes. `docs/LAUNCHER-CONTRACT.md` after the v0.4.0 tag:
   order; overlaps must be resolved before the second such fruit ships.
 - `couch`: the "only listed builds" rule is launcher v0.5.1 behaviour (was an unexplained "(v0.5.1)").
 
+`docs/ECOSYSTEM.md` adds Fruit Basket for iOS: one app with Strawberry and Crabapple built in,
+linked through `gba-ffi` and `nes-ffi`, outside the feed and not on these crates.
+
 ## v0.4.0 (2026-10-03)
 
 A coordinated dependency refresh. No fruit-basket type, function or module was renamed, moved or
