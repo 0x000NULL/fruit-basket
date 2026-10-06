@@ -132,3 +132,29 @@ The launcher rejects a feed older than one it has already accepted, so a feed mu
 with an earlier `generated` than the live one. Upload the site, then download the live
 `feed.json` and `feed.json.minisig` and verify them against the public key (key ID
 `9A7C56F99E6460E9`). Check that the new builds are listed with the right SHA-256.
+
+## Fruit Basket for Android
+
+Android releases are separate from the order above. The app links the cores through their
+`*-ffi` crates, not the fruit-basket crates, and it updates from its own `update.json`, not the
+feed. Its repo's `CLAUDE.md` and `docs/PLAN.md` have the details.
+
+1. **The repo.** Tests green, then raise versionName and versionCode (v0.2.1 is versionCode 3)
+   and write the `## vX.Y.Z` section of `CHANGELOG.md`, which becomes the release notes.
+2. **The tag.** Only the Orchestrator tags, with Ethan's OK. `release.yml` runs the tests and the
+   tour, then builds the release APK signed in CI with the release keystore. It checks the APK
+   with `apksigner`, fails if it is signed with the debug key, and publishes
+   `fruit-basket-android-<tag>.apk` with its `.sha256` as a GitHub release.
+3. **The site.** The Website session mirrors the APK into `site/fruit-basket/android/`, checking
+   its SHA-256, and adds the release to `update.json`. It needs that release's versionCode and
+   minSdk (29 so far), or the site build fails. There is no `LAUNCHER` file, so the feed doesn't
+   change.
+4. **Signing.** Ethan signs `update.json` with the feed's key (ID `9A7C56F99E6460E9`). Re-sign right
+   before deploying: the app rejects a manifest whose `generated` is older than one it has
+   already accepted.
+5. **Deploy and check.** Upload, then download the live `update.json` and `.minisig`. Check the
+   signature, and check the APK's size, SHA-256, versionCode and signer certificate (SHA-256
+   `fba199a5…`) against the manifest.
+
+> **Listing a release in `update.json` ships it to every Android install from v0.2.0 on.** The
+> next daily check offers it, the same as mirroring a launcher release does for the launcher.

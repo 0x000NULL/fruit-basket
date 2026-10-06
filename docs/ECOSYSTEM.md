@@ -75,7 +75,12 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
   with all four cores built in through a single cdylib, `rust/fbandroid`, over the same `*-ffi`
   crates as iOS (CORE-ABI v1.1). It does not use the feed, the `LAUNCHER` files or the
   fruit-basket crates. It ships as a signed APK on the site under `site/fruit-basket/android/`;
-  that directory has no `LAUNCHER` file, so the APK never enters the feed.
+  that directory has no `LAUNCHER` file, so the APK never enters the feed. At v0.2.1 since
+  2026-10-06. From v0.2.0 it updates itself in-app from the site's own
+  `fruit-basket/android/update.json`, signed with the feed's key (ID `9A7C56F99E6460E9`) and
+  verified by `fbandroid` with `minisign-verify`. It checks the APK's size, SHA-256, versionCode
+  and signing certificate, then hands it to Android's installer. The launcher's feed is not
+  involved.
 
 ## Who depends on what
 
@@ -115,6 +120,8 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
   battery save); a change to an `fb_*` signature needs a CORE-ABI version bump.
 - The Android app depends on the same `*-ffi` crates, through `fbandroid`. A core's save-state
   format change breaks Android players' states too, the same as on iOS.
+- The Android app's in-app updates depend on the site's `update.json` and on the feed's signing
+  key. Rotating that key breaks updates for every Android install already out there.
 
 [RELEASING.md](RELEASING.md) gives the order a coordinated release goes in, and
 [DEPS.md](DEPS.md) the dependency versions the Rust repos share.
