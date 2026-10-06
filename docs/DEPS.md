@@ -29,9 +29,21 @@ re-pin to either.
 Toolchain: edition 2024, `rust-version = "1.89"`, resolver 3. Every Rust repo in Fruit Basket
 declares the same `rust-version`.
 
-Outside the table: `fbandroid` (the Android app's cdylib, in `fruit-basket-android`) uses the
-`jni` crate on the `0.22` line (0.22.4 is its newest release). Nothing else in Fruit Basket
-uses it, and it is not in the fruit-basket API, so it moves on Android's schedule.
+## Outside the table
+
+The table lists fruit-basket's own dependencies. A few crates are used by other Fruit Basket
+repos but not by fruit-basket. `fbandroid` is the Android app's cdylib and `fbtools` is its host
+dev tool, both in `fruit-basket-android`.
+
+| Crate | Requirement | Locked | Used by |
+|---|---|---|---|
+| `minisign-verify` | `0.3` | 0.3.0 | the launcher (verifies `feed.json`), fbandroid (verifies the site's `update.json`) |
+| `jni` | `0.22` | 0.22.4 is the newest | fbandroid |
+| `minisign` | `0.10` | 0.10.0 | fbtools only: signs test manifests with a throwaway key for the updater tests; never shipped |
+
+`minisign-verify` has two consumers, so the rule below applies to it as well: the launcher and
+fbandroid stay on one major and move together. `jni` and `minisign` have one consumer each and
+move on Android's schedule.
 
 ## The rule
 
