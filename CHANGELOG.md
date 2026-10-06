@@ -3,7 +3,7 @@
 All three crates (`basket-ui`, `basket-app`, `basket-build`) share one version and one tag. Apps
 pin them by git tag (see the README).
 
-## v0.5.0 (2026-10-05)
+## v0.5.0 (2026-10-06)
 
 Two additive features: rumble and per-ROM system tags for the library. Nothing was renamed, moved
 or removed, no public struct gained a field and no public enum a variant, so an app on v0.4.0
