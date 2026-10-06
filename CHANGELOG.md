@@ -3,6 +3,17 @@
 All three crates (`basket-ui`, `basket-app`, `basket-build`) share one version and one tag. Apps
 pin them by git tag (see the README).
 
+## Unreleased
+
+Docs only; no crate changes. After the v0.5.0 tag:
+
+- `docs/ECOSYSTEM.md`: Mulberry and Olive are released (repos, binaries, platforms); the fruit
+  table gains each fruit's latest release; the iOS app has all four Rust fruits built in; the four
+  fruits pin v0.5.0 and the launcher v0.4.0.
+- `docs/RELEASING.md`: Mulberry and Olive are consumers; how to check that a release is additive
+  by building every consumer against it with `[patch]`; where v0.5.0 stands.
+- `docs/DEPS.md`: Mulberry and Olive link the crates; the table is unchanged in v0.5.0.
+
 ## v0.5.0 (2026-10-06)
 
 Two additive features: rumble and per-ROM system tags for the library. Nothing was renamed, moved

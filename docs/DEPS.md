@@ -1,13 +1,14 @@
 # Shared dependencies
 
-Strawberry, Crabapple and the launcher link the fruit-basket crates, and the crates' public API
+Strawberry, Crabapple, Mulberry, Olive and the launcher link the fruit-basket crates, and the API
 carries types from some of their dependencies (`minifb::Key`, `tiny_skia::Path`, `toml::Table`).
 Two majors of one crate in a build are two different types, so the Rust repos keep these crates
 in step.
 
 ## The table
 
-The versions in fruit-basket v0.4.0. The consumers match them when they re-pin to v0.4.0.
+The versions in fruit-basket v0.4.0, unchanged in v0.5.0. The consumers match them when they
+re-pin to either.
 
 | Crate | Requirement | Locked in v0.4.0 | In the fruit-basket API | Used by |
 |---|---|---|---|---|
