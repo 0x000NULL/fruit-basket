@@ -39,7 +39,7 @@ dev tool, both in `fruit-basket-android`.
 |---|---|---|---|
 | `minisign-verify` | `0.3` | 0.3.0 | the launcher (verifies `feed.json`), fbandroid (verifies the site's `update.json`) |
 | `jni` | `0.22` | 0.22.4 is the newest | fbandroid |
-| `minisign` | `0.10` | 0.10.0 | fbtools only: signs test manifests with a throwaway key for the updater tests; never shipped |
+| `minisign` | `0.10` | 0.10.0 | fbtools, and fbandroid's tests as a dev-dependency: signs test manifests with a throwaway key; host-only, never shipped |
 
 `minisign-verify` has two consumers, so the rule below applies to it as well: the launcher and
 fbandroid stay on one major and move together. `jni` and `minisign` have one consumer each and
