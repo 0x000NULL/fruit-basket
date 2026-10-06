@@ -7,7 +7,7 @@
 
 use super::index::IndexEntry;
 use super::{names, LibraryEntry, Platform, RomInfo};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 use std::sync::Arc;
@@ -33,6 +33,29 @@ pub fn spawn(folders: Vec<PathBuf>, cached: Vec<IndexEntry>, platform: Arc<dyn P
         let tx2 = tx.clone();
         let seen = scan(&folders, &cached, &*platform, |e| tx2.send(ScanMsg::Entry(e)).is_ok());
         let _ = tx.send(ScanMsg::Done { seen });
+    });
+    if let Err(e) = spawned {
+        eprintln!("warning: could not start the library scan: {e}");
+    }
+    rx
+}
+
+/// What [`spawn_tagged`] sends back: [`ScanMsg`] with each entry's system tag.
+#[derive(Debug)]
+pub(crate) enum TaggedMsg {
+    /// `None`: an index hit, the tag recorded for it stands.
+    Entry(LibraryEntry, Option<String>),
+    Done { seen: Vec<PathBuf> },
+}
+
+/// [`spawn`] for the [`super::Library`]: files are read through [`Platform::probe_system`], and an
+/// index hit not in `tagged` (read before tags existed) is read again so it gets one.
+pub(crate) fn spawn_tagged(folders: Vec<PathBuf>, cached: Vec<IndexEntry>, tagged: HashSet<PathBuf>, platform: Arc<dyn Platform>) -> Receiver<TaggedMsg> {
+    let (tx, rx) = channel();
+    let spawned = std::thread::Builder::new().name("library-scan".into()).spawn(move || {
+        let tx2 = tx.clone();
+        let seen = scan_inner(&folders, &cached, |p| tagged.contains(p), &*platform, |e, s| tx2.send(TaggedMsg::Entry(e, s)).is_ok());
+        let _ = tx.send(TaggedMsg::Done { seen });
     });
     if let Err(e) = spawned {
         eprintln!("warning: could not start the library scan: {e}");
@@ -71,6 +94,18 @@ fn list_candidates(folders: &[PathBuf], extensions: &[&str]) -> Vec<Candidate> {
 /// Run the scan on this thread. `sink` receives entries as they are found and returns false to
 /// stop early (the receiver went away). Returns the paths seen.
 pub fn scan(folders: &[PathBuf], cached: &[IndexEntry], platform: &dyn Platform, mut sink: impl FnMut(LibraryEntry) -> bool) -> Vec<PathBuf> {
+    scan_inner(folders, cached, |_| true, platform, |e, _| sink(e))
+}
+
+/// [`scan`], also giving each entry's system tag: `Some` for a file read now, `None` for an index
+/// hit. An index hit `tagged` says no to is read again.
+fn scan_inner(
+    folders: &[PathBuf],
+    cached: &[IndexEntry],
+    tagged: impl Fn(&Path) -> bool,
+    platform: &dyn Platform,
+    mut sink: impl FnMut(LibraryEntry, Option<String>) -> bool,
+) -> Vec<PathBuf> {
     let candidates = list_candidates(folders, platform.extensions());
     let by_path: HashMap<&Path, &IndexEntry> = cached.iter().map(|e| (Path::new(e.path.as_str()), e)).collect();
     let seen = candidates.iter().map(|c| c.path.clone()).collect();
@@ -79,8 +114,8 @@ pub fn scan(folders: &[PathBuf], cached: &[IndexEntry], platform: &dyn Platform,
     let mut unknown = Vec::new();
     for c in candidates {
         match by_path.get(c.path.as_path()) {
-            Some(ie) if ie.matches(&c.path, c.size, c.mtime) => {
-                if !sink(ie.to_entry()) {
+            Some(ie) if ie.matches(&c.path, c.size, c.mtime) && tagged(&c.path) => {
+                if !sink(ie.to_entry(), None) {
                     return seen;
                 }
             }
@@ -89,20 +124,22 @@ pub fn scan(folders: &[PathBuf], cached: &[IndexEntry], platform: &dyn Platform,
     }
     // pass 2: read the rest
     for c in unknown {
-        if !sink(read_entry(platform, &c.path, c.size, c.mtime)) {
+        let (entry, system) = read_entry(platform, &c.path, c.size, c.mtime);
+        if !sink(entry, Some(system)) {
             break;
         }
     }
     seen
 }
 
-/// Open one ROM file and describe it; failures become an `unreadable` entry.
-fn read_entry(platform: &dyn Platform, path: &Path, size: u64, mtime: i64) -> LibraryEntry {
+/// Open one ROM file and describe it, with its system tag; failures become an `unreadable` entry
+/// with no tag.
+fn read_entry(platform: &dyn Platform, path: &Path, size: u64, mtime: i64) -> (LibraryEntry, String) {
     let file_name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
     let from_name = names::from_file_name(&file_name);
     // a malformed file must never take the scan thread down
-    let info = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| platform.probe(path)))
-        .unwrap_or_else(|_| RomInfo { unreadable: Some("the file could not be decoded".into()), ..RomInfo::default() });
+    let (info, system) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| platform.probe_system(path)))
+        .unwrap_or_else(|_| (RomInfo { unreadable: Some("the file could not be decoded".into()), ..RomInfo::default() }, String::new()));
     let mut entry = LibraryEntry {
         path: path.to_path_buf(),
         size,
@@ -117,7 +154,7 @@ fn read_entry(platform: &dyn Platform, path: &Path, size: u64, mtime: i64) -> Li
     };
     if let Some(why) = info.unreadable {
         entry.unreadable = Some(why);
-        return entry;
+        return (entry, String::new());
     }
     entry.code = info.code;
     entry.version = info.version;
@@ -131,7 +168,7 @@ fn read_entry(platform: &dyn Platform, path: &Path, size: u64, mtime: i64) -> Li
             }
         }
     }
-    entry
+    (entry, system)
 }
 
 /// Test and render helper: scan synchronously and collect.

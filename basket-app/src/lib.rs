@@ -8,8 +8,8 @@
 //! * [`prefs`]: the settings file's mechanics (unknown keys kept, a bad value costs only its key)
 //!   and name-based key and pad bindings.
 //! * [`library`]: folder scan, display names, the index cache and label art, with the console
-//!   behind [`library::Platform`].
-//! * [`pads`]: gilrs gamepads to per-port button masks.
+//!   behind [`library::Platform`], which can tag each ROM with a system for the library tabs.
+//! * [`pads`]: gilrs gamepads to per-port button masks, and rumble back to them.
 //! * [`icon`]: the window icon on Windows and X11.
 
 pub mod audio;

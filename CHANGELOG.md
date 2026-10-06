@@ -3,9 +3,48 @@
 All three crates (`basket-ui`, `basket-app`, `basket-build`) share one version and one tag. Apps
 pin them by git tag (see the README).
 
-## Unreleased
+## v0.5.0 (2026-10-05)
 
-Docs only; no crate changes. `docs/LAUNCHER-CONTRACT.md` after the v0.4.0 tag:
+Two additive features: rumble and per-ROM system tags for the library. Nothing was renamed, moved
+or removed, no public struct gained a field and no public enum a variant, so an app on v0.4.0
+re-pins with no code changes. Dependencies are unchanged ([docs/DEPS.md](docs/DEPS.md) still
+holds). Save files, save-state slots, covers and `index.toml` are written exactly as before;
+nothing the launcher reads changed.
+
+### Breaking changes for apps re-pinning from v0.4.0
+
+None.
+
+### Added
+
+- **Rumble** (`basket_app::pads`). `Gamepads::set_rumble(strength)` rumbles the pads on port 1,
+  and `Gamepads::set_rumble_port(port, strength)` those on any port, at `strength` 0.0 (off) to
+  1.0 (full; clamped, NaN is off), through gilrs force feedback on both motors. Call it every
+  emulated frame with the core's motor state. Rumble stops by itself `RUMBLE_HOLD` (250 ms) after
+  the last call that asked for it, at the next `poll`/`poll_ports`, so a pause menu or a closed
+  game never leaves a pad buzzing. Pads without force feedback, a port with no pads and a machine
+  without gamepad support ignore it; it never fails. `Gamepads::rumble_supported()` says whether
+  any connected pad has motors (for a settings toggle). Helpers: `rumble_gain`,
+  `rumble_targets`.
+- **System tags** (`basket_app::library`), for a fruit that plays more than one system:
+  - `Platform::probe_system(&self, path) -> (RomInfo, String)`, a provided method: the ROM's
+    description plus a short system tag of the fruit's choosing (`"gbc"`), `""` for none. The
+    default calls `probe` and tags nothing, so a fruit that does not override it is unchanged.
+    The library's scan now calls `probe_system` instead of `probe`; the public `scan::scan`,
+    `scan::spawn` and `scan::scan_collect` behave as before.
+  - `Library::system_of(path) -> &str`, `Library::systems() -> Vec<&str>` (the distinct tags in
+    the library, sorted, without `""`: the tabs after "All"), and
+    `Library::entries_in(Option<&str>)` (one tab's entries in `entries()` order; `None` is all,
+    `Some("")` the untagged ones). `Library::set_system` tags an entry by hand, for
+    `Library::from_entries` tests and renders.
+  - The tags are cached in a new `<cache_dir>/systems.toml` beside `index.toml` (module
+    `library::systems`), so a warm start has them before the scan. The first scan after the
+    update reads every ROM once more, in the background, because v0.4.0's index has no tags;
+    after that only new or changed files are read, as before.
+
+### Docs
+
+`docs/LAUNCHER-CONTRACT.md` after the v0.4.0 tag:
 
 - `notes` and `assets` describe what feedgen.py actually emits; the four platforms are the ones in
   use, not a whitelist.

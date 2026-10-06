@@ -5,6 +5,8 @@
 //!   answers for unchanged files; only new or changed ROMs are read).
 //! * `index` is the TOML cache (`<cache_dir>/index.toml`): scan results plus play statistics.
 //!   A warm start shows the whole case from it before the scan has confirmed anything.
+//! * `systems` is its sidecar (`<cache_dir>/systems.toml`): the system tag
+//!   [`Platform::probe_system`] gave each ROM, which the library tabs filter on.
 //! * `capture` finds label art: newest save-state frame, else a cached title capture, else none;
 //!   missing captures are made by one background thread running the ROM headless.
 //!
@@ -22,10 +24,12 @@ pub mod capture;
 pub mod index;
 pub mod names;
 pub mod scan;
+pub mod systems;
 
 pub use capture::Art;
 
 use index::Index;
+use systems::Systems;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender};
@@ -87,6 +91,14 @@ pub trait Platform: Send + Sync + 'static {
     fn extensions(&self) -> &'static [&'static str];
     /// Describe one ROM file. A panic counts as "could not be decoded".
     fn probe(&self, path: &Path) -> RomInfo;
+    /// [`Platform::probe`] plus the system the ROM is for, for a fruit that plays more than one
+    /// (`"gbc"` for a Game Boy Color game): a short tag of the fruit's choosing, `""` for none.
+    /// The library keeps it per file ([`Library::system_of`]) and the library tabs filter on it
+    /// ([`Library::systems`], [`Library::entries_in`]). The library calls this, not `probe`;
+    /// the default tags nothing.
+    fn probe_system(&self, path: &Path) -> (RomInfo, String) {
+        (self.probe(path), String::new())
+    }
     /// The picture of the newest loadable save state, if the game has one.
     fn slot_art(&self, rom: &Path) -> Option<Art>;
     /// Run the game headless and save its title screen as a PNG at `out`.
@@ -99,7 +111,9 @@ pub struct Library {
     cache_dir: Option<PathBuf>,
     entries: Vec<LibraryEntry>,
     index: Index,
-    scan_rx: Option<Receiver<scan::ScanMsg>>,
+    /// Each ROM's system tag (`systems.toml`).
+    systems: Systems,
+    scan_rx: Option<Receiver<scan::TaggedMsg>>,
     scanning: bool,
     art_tx: Option<Sender<capture::ArtJob>>,
     art_rx: Option<Receiver<capture::ArtMsg>>,
@@ -143,12 +157,14 @@ impl Library {
 
     fn bare(folders: Vec<PathBuf>, cache_dir: Option<PathBuf>) -> Library {
         let index = cache_dir.as_deref().map(Index::load).unwrap_or_default();
+        let systems = cache_dir.as_deref().map(Systems::load).unwrap_or_default();
         let mut lib = Library {
             platform: None,
             folders,
             cache_dir,
             entries: Vec::new(),
             index,
+            systems,
             scan_rx: None,
             scanning: false,
             art_tx: None,
@@ -201,7 +217,8 @@ impl Library {
         let Some(platform) = self.platform.clone() else { return };
         self.seen_this_scan.clear();
         self.scanning = true;
-        self.scan_rx = Some(scan::spawn(self.folders.clone(), self.index.entries.clone(), platform));
+        let tagged = self.systems.paths().map(Path::to_path_buf).collect();
+        self.scan_rx = Some(scan::spawn_tagged(self.folders.clone(), self.index.entries.clone(), tagged, platform));
     }
 
     /// Ingest scan and art results. Call once per frame; never blocks.
@@ -211,8 +228,11 @@ impl Library {
         if let Some(rx) = &self.scan_rx {
             while let Ok(msg) = rx.try_recv() {
                 match msg {
-                    scan::ScanMsg::Entry(e) => {
+                    scan::TaggedMsg::Entry(e, system) => {
                         self.seen_this_scan.insert(e.path.clone());
+                        if let Some(s) = system {
+                            changed |= self.systems.set(&e.path, &s);
+                        }
                         self.index.upsert(&e);
                         match self.entries.iter_mut().find(|x| x.path == e.path) {
                             Some(slot) => {
@@ -227,7 +247,7 @@ impl Library {
                             }
                         }
                     }
-                    scan::ScanMsg::Done { seen } => {
+                    scan::TaggedMsg::Done { seen } => {
                         done = Some(seen);
                         break;
                     }
@@ -248,7 +268,10 @@ impl Library {
                 let p = Path::new(&ie.path);
                 seen.contains(p) || !p.parent().is_some_and(|d| folders.iter().any(|f| f.as_path() == d))
             });
+            let index = &self.index;
+            self.systems.retain(|p| index.get(p).is_some());
             self.save_index();
+            self.save_systems();
         }
         if changed {
             self.refresh_last_played();
@@ -279,8 +302,36 @@ impl Library {
             }
     }
 
+    fn save_systems(&self) {
+        if let Some(dir) = &self.cache_dir
+            && let Err(e) = self.systems.save(dir) {
+                eprintln!("warning: library systems: {e:#}");
+            }
+    }
+
     pub fn entries(&self) -> &[LibraryEntry] {
         &self.entries
+    }
+
+    /// The system tag [`Platform::probe_system`] gave `path`; `""` when it gave none (always, for
+    /// a fruit that does not tag).
+    pub fn system_of(&self, path: &Path) -> &str {
+        self.systems.get(path)
+    }
+
+    /// The distinct system tags among the entries, sorted, without `""`: the library tabs after
+    /// "All". Empty for a fruit that does not tag.
+    pub fn systems(&self) -> Vec<&str> {
+        let mut out: Vec<&str> = self.entries.iter().map(|e| self.systems.get(&e.path)).filter(|s| !s.is_empty()).collect();
+        out.sort_unstable();
+        out.dedup();
+        out
+    }
+
+    /// The entries of one library tab, in [`Library::entries`] order: `None` is every entry,
+    /// `Some(tag)` those tagged `tag` (`Some("")`: the untagged ones).
+    pub fn entries_in<'a>(&'a self, system: Option<&'a str>) -> impl Iterator<Item = &'a LibraryEntry> + 'a {
+        self.entries.iter().filter(move |e| system.is_none_or(|s| self.systems.get(&e.path) == s))
     }
 
     pub fn entry(&self, path: &Path) -> Option<&LibraryEntry> {
@@ -331,6 +382,13 @@ impl Library {
         self.index.record_played(path, 0, when);
         self.refresh_last_played();
         self.revision += 1;
+    }
+
+    /// Test and render hook: tag a game's system directly (for [`Library::from_entries`]).
+    pub fn set_system(&mut self, path: &Path, system: &str) {
+        if self.systems.set(path, system) {
+            self.revision += 1;
+        }
     }
 
     /// Test and render hook: attach art directly.
@@ -469,6 +527,134 @@ mod tests {
         }
         assert_eq!(got, Some(vec![0, 255, 0]));
         let _ = std::fs::remove_dir_all(&games);
+    }
+
+    /// [`fake::FakePlatform`] that tags a ROM `"color"` when its code starts with `C`, and counts
+    /// the files it reads.
+    struct Tagging(std::sync::atomic::AtomicUsize);
+
+    impl Platform for Tagging {
+        fn extensions(&self) -> &'static [&'static str] {
+            fake::FakePlatform.extensions()
+        }
+        fn probe(&self, path: &Path) -> RomInfo {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            fake::FakePlatform.probe(path)
+        }
+        fn probe_system(&self, path: &Path) -> (RomInfo, String) {
+            let info = self.probe(path);
+            let tag = if info.code.starts_with('C') { "color" } else { "" };
+            (info, tag.into())
+        }
+        fn slot_art(&self, rom: &Path) -> Option<Art> {
+            fake::FakePlatform.slot_art(rom)
+        }
+        fn capture_title(&self, rom: &Path, out: &Path) -> anyhow::Result<Art> {
+            fake::FakePlatform.capture_title(rom, out)
+        }
+    }
+
+    fn tagging() -> Arc<Tagging> {
+        Arc::new(Tagging(std::sync::atomic::AtomicUsize::new(0)))
+    }
+
+    fn titles<'a>(it: impl Iterator<Item = &'a LibraryEntry>) -> Vec<&'a str> {
+        it.map(|e| e.title.as_str()).collect()
+    }
+
+    #[test]
+    fn system_tags_reach_the_tabs_and_survive_a_warm_start() {
+        let games = temp_dir("tags");
+        let cache = temp_dir("tags-cache");
+        std::fs::write(games.join("Tetris (World).rom"), "DMGTTETRIS").unwrap();
+        std::fs::write(games.join("Zelda DX (USA).rom"), "CZ7EZELDA").unwrap();
+        std::fs::write(games.join("Bad.rom"), [0u8; 1]).unwrap();
+        let p = tagging();
+        let mut lib = Library::new(vec![games.clone()], Some(cache.clone()), p.clone());
+        wait_scan(&mut lib);
+        let zelda = games.join("Zelda DX (USA).rom");
+        assert_eq!(lib.system_of(&zelda), "color");
+        assert_eq!(lib.system_of(&games.join("Tetris (World).rom")), "");
+        assert_eq!(lib.systems(), vec!["color"]);
+        assert_eq!(titles(lib.entries_in(None)), vec!["Bad.rom", "Tetris", "Zelda DX"]);
+        assert_eq!(titles(lib.entries_in(Some("color"))), vec!["Zelda DX"]);
+        assert_eq!(titles(lib.entries_in(Some(""))), vec!["Bad.rom", "Tetris"]);
+        assert!(cache.join(systems::FILE_NAME).is_file());
+        assert_eq!(p.0.load(std::sync::atomic::Ordering::SeqCst), 3);
+        drop(lib);
+
+        // the warm start has the tags before the scan, and the scan reads nothing
+        let p2 = tagging();
+        let mut lib2 = Library::new(vec![games.clone()], Some(cache.clone()), p2.clone());
+        assert_eq!(lib2.systems(), vec!["color"]);
+        assert_eq!(titles(lib2.entries_in(Some("color"))), vec!["Zelda DX"]);
+        wait_scan(&mut lib2);
+        assert_eq!(p2.0.load(std::sync::atomic::Ordering::SeqCst), 0, "every file was an index hit");
+        assert_eq!(lib2.system_of(&zelda), "color");
+
+        // a deleted ROM loses its row
+        std::fs::remove_file(&zelda).unwrap();
+        let mut lib3 = Library::new(vec![games.clone()], Some(cache.clone()), tagging());
+        wait_scan(&mut lib3);
+        assert!(lib3.systems().is_empty());
+        assert!(!Systems::load(&cache).knows(&zelda));
+        let _ = std::fs::remove_dir_all(&games);
+        let _ = std::fs::remove_dir_all(&cache);
+    }
+
+    #[test]
+    fn an_index_from_before_tags_is_read_once_more() {
+        let games = temp_dir("upgrade");
+        let cache = temp_dir("upgrade-cache");
+        std::fs::write(games.join("Zelda DX (USA).rom"), "CZ7EZELDA").unwrap();
+        // a v0.4.0 library: index.toml only
+        let mut old = Library::new(vec![games.clone()], Some(cache.clone()), fake::platform());
+        wait_scan(&mut old);
+        drop(old);
+        std::fs::remove_file(cache.join(systems::FILE_NAME)).unwrap();
+        let p = tagging();
+        let mut lib = Library::new(vec![games.clone()], Some(cache.clone()), p.clone());
+        wait_scan(&mut lib);
+        assert_eq!(p.0.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert_eq!(lib.systems(), vec!["color"]);
+        let _ = std::fs::remove_dir_all(&games);
+        let _ = std::fs::remove_dir_all(&cache);
+    }
+
+    #[test]
+    fn a_fruit_that_does_not_tag_has_one_tab() {
+        let games = temp_dir("untagged");
+        std::fs::write(games.join("A.rom"), "CAAAA").unwrap();
+        let mut lib = Library::new(vec![games.clone()], None, fake::platform());
+        wait_scan(&mut lib);
+        assert_eq!(lib.system_of(&games.join("A.rom")), "");
+        assert!(lib.systems().is_empty());
+        assert_eq!(lib.entries_in(None).count(), 1);
+        assert_eq!(lib.entries_in(Some("")).count(), 1);
+        let _ = std::fs::remove_dir_all(&games);
+    }
+
+    #[test]
+    fn fixed_libraries_take_tags_by_hand() {
+        let entry = |name: &str| LibraryEntry {
+            path: PathBuf::from(format!("Games/{name}.rom")),
+            size: 1,
+            mtime: 0,
+            title: name.into(),
+            subtitle: String::new(),
+            code: String::new(),
+            version: 0,
+            save: "none".into(),
+            rom_len: 1,
+            unreadable: None,
+        };
+        let mut lib = Library::from_entries(vec![PathBuf::from("Games")], vec![entry("B"), entry("A")]);
+        let rev = lib.revision();
+        lib.set_system(Path::new("Games/B.rom"), "gbc");
+        assert!(lib.revision() > rev);
+        assert_eq!(lib.systems(), vec!["gbc"]);
+        assert_eq!(titles(lib.entries_in(Some("gbc"))), vec!["B"]);
+        assert_eq!(titles(lib.entries_in(None)), vec!["A", "B"]);
     }
 
     #[test]
