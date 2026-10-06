@@ -29,6 +29,10 @@ re-pin to either.
 Toolchain: edition 2024, `rust-version = "1.89"`, resolver 3. Every Rust repo in Fruit Basket
 declares the same `rust-version`.
 
+Outside the table: `fbandroid` (the Android app's cdylib, in `fruit-basket-android`) uses the
+`jni` crate on the `0.21` line (0.21.1 is its newest release). Nothing else in Fruit Basket
+uses it, and it is not in the fruit-basket API, so it moves on Android's schedule.
+
 ## The rule
 
 **A consumer never pins a shared crate at a different major than fruit-basket.** For crates

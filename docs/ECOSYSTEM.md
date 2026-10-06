@@ -71,6 +71,11 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
   the iOS repo's `docs/CORE-ABI.md`). It uses none of the
   fruit-basket crates. Its design comes from the mobile mockups and their token file, a sibling of
   `basket-ui/tokens.json`. No PS2 for now.
+- **Fruit Basket for Android**: repo `fruit-basket-android` (private). One Kotlin/Compose app
+  with all four cores built in through a single cdylib, `rust/fbandroid`, over the same `*-ffi`
+  crates as iOS (CORE-ABI v1.1). It does not use the feed, the `LAUNCHER` files or the
+  fruit-basket crates. It ships as a signed APK on the site under `site/fruit-basket/android/`;
+  that directory has no `LAUNCHER` file, so the APK never enters the feed.
 
 ## Who depends on what
 
@@ -108,6 +113,8 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
 - The iOS app depends on the four Rust cores through their `*-ffi` crates, not on this repo. A
   change to a core's save-state format breaks iOS players' states (the app falls back to the
   battery save); a change to an `fb_*` signature needs a CORE-ABI version bump.
+- The Android app depends on the same `*-ffi` crates, through `fbandroid`. A core's save-state
+  format change breaks Android players' states too, the same as on iOS.
 
 [RELEASING.md](RELEASING.md) gives the order a coordinated release goes in, and
 [DEPS.md](DEPS.md) the dependency versions the Rust repos share.
