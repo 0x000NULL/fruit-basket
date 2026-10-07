@@ -17,13 +17,13 @@ Latest is the newest release on the site as of 2026-10-06.
 | 1 | Pomegranate | PlayStation 2 | `ps2emu` (private) | `ps2emu` | released | v0.5.0 |
 | 2 | Strawberry | Game Boy Advance | `GBA_Emulator` (private) | `strawberry` | released | v1.7.1 |
 | 3 | Grenadine | PlayStation 2 static recompiler | `recomp` (private) | `recomp` (a tool, not an emulator) | paused, no build, not in the feed | none |
-| 4 | Fig | PlayStation | none yet | none yet | growing | none |
+| 4 | Fig | PlayStation | `fig` (private) | `fig` | growing (in development) | none |
 | 5 | Starfruit | Nintendo 64 | none yet | none yet | growing | none |
 | 6 | Mangosteen | GameCube | none yet | none yet | growing | none |
 | 7 | Crabapple | NES / Famicom | `crabapple` (private) | `crabapple` | released | v1.0.0 |
 | 8 | Mulberry | SNES | `mulberry` (private) | `mulberry` | released | v0.3.1 |
 | 9 | Olive | Game Boy and Game Boy Color | `olive` (private) | `olive` | released | v0.3.0 |
-| 10 | Pear | DS and DSi | none yet | none yet | growing | none |
+| 10 | Pear | DS | `pear` (private) | `pear` | released | v0.1.1 |
 
 - **Pomegranate** (No. 1) is a PS2 emulator in C++20 for Windows and Linux. It needs no BIOS
   dump. It does not use the fruit-basket crates. It keeps its saves and settings in a data folder
@@ -40,6 +40,12 @@ Latest is the newest release on the site as of 2026-10-06.
 - **Olive** (No. 9) is a Game Boy and Game Boy Color emulator in Rust for Windows, macOS and
   Linux (`.gb`, `.gbc`), on the fruit-basket crates. It is the first user of v0.5.0's rumble
   (MBC5 rumble carts) and library system tags (its All / Game Boy / Color tabs).
+- **Fig** (No. 4) is a PlayStation emulator in Rust, in development since 2026-10-07 (no release
+  yet). Like Pomegranate it needs no BIOS dump: it boots discs directly on its own HLE kernel.
+- **Pear** (No. 10) is a DS emulator in Rust for Windows, macOS and Linux (`.nds`), on the
+  fruit-basket crates (v0.5.0). It needs no BIOS or firmware dumps (direct boot, HLE BIOS,
+  synthesized firmware). It composes both screens into one `Screen` and maps the mouse to the touch
+  screen. Released v0.1.0 and v0.1.1 on 2026-10-07; no DSi mode.
 - **Growing** fruits are planned. They are listed in the feed with no builds, so the launcher can
   show them and alert when one ripens (is released).
 
@@ -107,10 +113,10 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
      no fruit-basket crates)   its self-update)
 ```
 
-- Strawberry, Crabapple, Mulberry, Olive and the launcher depend on all three fruit-basket
+- Strawberry, Crabapple, Mulberry, Olive, Pear and the launcher depend on all three fruit-basket
   crates, each pinning a tag. After a dependency refresh ([DEPS.md](DEPS.md)) all of them pin the
   same one. A feature release need only be adopted by the apps that use it. As of 2026-10-07 the
-  four fruits and the launcher (v1.3.0) all pin v0.5.0. The launcher uses neither rumble nor
+  five fruits and the launcher (v1.3.0) all pin v0.5.0. The launcher uses neither rumble nor
   system tags: its GB/GBC label reads the cartridge header itself.
 - Pomegranate and Grenadine are C++ and use none of them.
 - The launcher depends on every fruit only through the feed: the `LAUNCHER` contract and each
