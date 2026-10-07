@@ -91,10 +91,9 @@ For each of Strawberry, Crabapple, Mulberry and Olive, and the launcher when it 
 Pomegranate does not use the crates. It joins a coordinated refresh only for its own
 dependencies.
 
-Where things stand (2026-10-06): fruit-basket v0.5.0 is tagged (`f0b3a22`, tag CI green) and
-adopted by all four fruits: Strawberry v1.7.1, Crabapple v0.12.1, Mulberry v0.3.1 and Olive
-v0.3.0 pin it. The launcher (v1.2.0) still pins v0.4.0, which is fine: v0.5.0 only added rumble
-and library system tags, neither of which the launcher uses, and changed no dependency.
+Where things stand (2026-10-07): fruit-basket v0.5.0 is tagged (`f0b3a22`, tag CI green) and
+adopted by every consumer: Strawberry v1.7.1, Crabapple v1.0.0, Mulberry v0.3.1, Olive v0.3.0
+and the launcher v1.3.0 pin it. The launcher uses neither rumble nor system tags.
 
 ### 3. The site
 

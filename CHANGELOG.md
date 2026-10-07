@@ -13,6 +13,8 @@ Docs only; no crate changes. After the v0.5.0 tag:
 - `docs/RELEASING.md`: Mulberry and Olive are consumers; how to check that a release is additive
   by building every consumer against it with `[patch]`; where v0.5.0 stands.
 - `docs/DEPS.md`: Mulberry and Olive link the crates; the table is unchanged in v0.5.0.
+- 2026-10-07: Crabapple v1.0.0 and launcher v1.3.0 are released; the launcher now pins v0.5.0
+  too (ECOSYSTEM, RELEASING).
 
 ## v0.5.0 (2026-10-06)
 

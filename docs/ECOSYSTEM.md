@@ -20,7 +20,7 @@ Latest is the newest release on the site as of 2026-10-06.
 | 4 | Fig | PlayStation | none yet | none yet | growing | none |
 | 5 | Starfruit | Nintendo 64 | none yet | none yet | growing | none |
 | 6 | Mangosteen | GameCube | none yet | none yet | growing | none |
-| 7 | Crabapple | NES / Famicom | `crabapple` (private) | `crabapple` | released | v0.12.1 |
+| 7 | Crabapple | NES / Famicom | `crabapple` (private) | `crabapple` | released | v1.0.0 |
 | 8 | Mulberry | SNES | `mulberry` (private) | `mulberry` | released | v0.3.1 |
 | 9 | Olive | Game Boy and Game Boy Color | `olive` (private) | `olive` | released | v0.3.0 |
 | 10 | Pear | DS and DSi | none yet | none yet | growing | none |
@@ -63,7 +63,8 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
   release. The feed is signed with minisign (`feed.json.minisig`, key ID `9A7C56F99E6460E9`).
   The launcher trusts a build only when its hash is in a feed whose signature checks out.
 - **Fruit Basket for iOS**: repo `fruit-basket-ios` (private), App Store name "Fruit Basket Emu",
-  on TestFlight since 2026-10-04. One SwiftUI app with Strawberry, Crabapple, Olive and Mulberry
+  on TestFlight since 2026-10-04 (0.4.0 since 2026-10-07; main also pins Crabapple v1.0.0).
+  One SwiftUI app with Strawberry, Crabapple, Olive and Mulberry
   built in: the App Store forbids downloading code, so it does not use the feed, the `LAUNCHER`
   files or the launcher's install flow, and its Basket tab lists the built-in and growing fruits.
   It links each core in-process through a C ABI (`gba-ffi` in GBA_Emulator, `nes-ffi` in
@@ -76,7 +77,7 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
   crates as iOS (CORE-ABI v1.1). It does not use the feed, the `LAUNCHER` files or the
   fruit-basket crates. It ships as a signed APK on the site under `site/fruit-basket/android/`;
   that directory has no `LAUNCHER` file, so the APK never enters the feed. At v0.2.1 since
-  2026-10-06. From v0.2.0 it updates itself in-app from the site's own
+  2026-10-06 (main also pins Crabapple v1.0.0, unreleased). From v0.2.0 it updates itself in-app from the site's own
   `fruit-basket/android/update.json`, signed with the feed's key (ID `9A7C56F99E6460E9`) and
   verified by `fbandroid` with `minisign-verify`. It checks the APK's size, SHA-256, versionCode
   and signing certificate, then hands it to Android's installer. The launcher's feed is not
@@ -108,9 +109,9 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
 
 - Strawberry, Crabapple, Mulberry, Olive and the launcher depend on all three fruit-basket
   crates, each pinning a tag. After a dependency refresh ([DEPS.md](DEPS.md)) all of them pin the
-  same one. A feature release need only be adopted by the apps that use it. As of 2026-10-06 the
-  four fruits pin v0.5.0 and the launcher pins v0.4.0: it uses neither rumble nor system tags,
-  and v0.5.0 changed no dependency, so both tags share one set of majors.
+  same one. A feature release need only be adopted by the apps that use it. As of 2026-10-07 the
+  four fruits and the launcher (v1.3.0) all pin v0.5.0. The launcher uses neither rumble nor
+  system tags: its GB/GBC label reads the cartridge header itself.
 - Pomegranate and Grenadine are C++ and use none of them.
 - The launcher depends on every fruit only through the feed: the `LAUNCHER` contract and each
   fruit's command-line flags and file names. It never links against a fruit.
