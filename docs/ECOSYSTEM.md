@@ -17,13 +17,13 @@ Latest is the newest release on the site as of 2026-10-06.
 | 1 | Pomegranate | PlayStation 2 | `ps2emu` (private) | `ps2emu` | released | v0.5.0 |
 | 2 | Strawberry | Game Boy Advance | `GBA_Emulator` (private) | `strawberry` | released | v1.7.1 |
 | 3 | Grenadine | PlayStation 2 static recompiler | `recomp` (private) | `recomp` (a tool, not an emulator) | paused, no build, not in the feed | none |
-| 4 | Fig | PlayStation | `fig` (private) | `fig` | released | v0.1.0 |
+| 4 | Fig | PlayStation | `fig` (private) | `fig` | released | v1.0.0 |
 | 5 | Starfruit | Nintendo 64 | none yet | none yet | growing | none |
 | 6 | Mangosteen | GameCube | none yet | none yet | growing | none |
 | 7 | Crabapple | NES / Famicom | `crabapple` (private) | `crabapple` | released | v1.0.0 |
 | 8 | Mulberry | SNES | `mulberry` (private) | `mulberry` | released | v0.3.1 |
 | 9 | Olive | Game Boy and Game Boy Color | `olive` (private) | `olive` | released | v0.3.0 |
-| 10 | Pear | DS | `pear` (private) | `pear` | released | v0.2.0 |
+| 10 | Pear | DS | `pear` (private) | `pear` | released | v1.0.0 |
 
 - **Pomegranate** (No. 1) is a PS2 emulator in C++20 for Windows and Linux. It needs no BIOS
   dump. It does not use the fruit-basket crates. It keeps its saves and settings in a data folder
@@ -41,13 +41,15 @@ Latest is the newest release on the site as of 2026-10-06.
   Linux (`.gb`, `.gbc`), on the fruit-basket crates. It is the first user of v0.5.0's rumble
   (MBC5 rumble carts) and library system tags (its All / Game Boy / Color tabs).
 - **Fig** (No. 4) is a PlayStation emulator in Rust for Windows, macOS and Linux (`.cue`,
-  `.iso`), on the fruit-basket crates (v0.5.0). Like Pomegranate it needs no BIOS dump: it boots
-  discs directly on its own HLE kernel. Released v0.1.0 on 2026-10-08 (digital pad on desktop;
-  analog and rumble are in its mobile ABI, CORE-ABI v1.3).
+  `.chd`, `.iso`, `.m3u`), on the fruit-basket crates (v0.6.0, the first user of its stick axes
+  and two-motor rumble). Like Pomegranate it needs no BIOS dump: it boots discs directly on its
+  own HLE kernel. Released v0.1.0 and v0.1.1 on 2026-10-08, v0.2.0 (timing accuracy) and v1.0.0
+  (CHD, `.m3u` playlists, the desktop DualShock) the same day; its feed `oldest` is v1.0.0.
 - **Pear** (No. 10) is a DS emulator in Rust for Windows, macOS and Linux (`.nds`), on the
   fruit-basket crates (v0.5.0). It needs no BIOS or firmware dumps (direct boot, HLE BIOS,
   synthesized firmware). It composes both screens into one `Screen` and maps the mouse to the touch
-  screen. Released v0.1.0 and v0.1.1 on 2026-10-07 and v0.2.0 (3D accuracy) on 2026-10-08; no DSi mode.
+  screen. Released v0.1.0 and v0.1.1 on 2026-10-07, v0.2.0 (3D accuracy) and v1.0.0 (speed,
+  firmware settings kept) on 2026-10-08; no DSi mode.
 - **Growing** fruits are planned. They are listed in the feed with no builds, so the launcher can
   show them and alert when one ripens (is released).
 
