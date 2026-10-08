@@ -3,9 +3,35 @@
 All three crates (`basket-ui`, `basket-app`, `basket-build`) share one version and one tag. Apps
 pin them by git tag (see the README).
 
-## Unreleased
+## v0.6.0 — unreleased
 
-Docs only; no crate changes. After the v0.5.0 tag:
+One additive feature: analog sticks and two-motor rumble for consoles that have them (Fig's
+DualShock first). Nothing was renamed, moved or removed, no public struct gained a field and no
+public enum a variant, so an app on v0.5.0 re-pins with no code changes. Dependencies are
+unchanged ([docs/DEPS.md](docs/DEPS.md) still holds). Nothing an app writes, and nothing the
+launcher reads, changed.
+
+### Breaking changes for apps re-pinning from v0.5.0
+
+None.
+
+### Added
+
+- **Analog sticks** (`basket_app::pads`). `Gamepads::axes(port)` returns the sticks of the
+  pads on a port as of the last poll: `[left X, left Y, right X, right Y]`, each
+  -32767..=32767, 0 at the centre, +x right and +y down (CORE-ABI's convention, so desktop and
+  mobile hosts hand a core the same numbers). Several pads on one port combine axis by axis, the
+  most deflected one winning (`combine_axes`), so two pads on a shared port never cancel out. No
+  pads, or no gamepad support: centred. The left stick still acts as the D-pad in `PadPoll`'s
+  mask, as before. Helper: `axis_i16` (gilrs's -1..1 to the 16-bit value, Y flipped on request).
+- **Two-motor rumble.** `Gamepads::set_rumble_dual(port, strong, weak)` drives the strong
+  (low-frequency) and weak (high-frequency) motors at strengths of their own, each 0.0 to 1.0
+  (clamped, NaN is off): one gilrs effect per motor, each at its own gain. It behaves as
+  `set_rumble_port` otherwise: call it every emulated frame, it stops by itself `RUMBLE_HOLD`
+  after the last call that asked for it, and it never fails. Use it or `set_rumble_port` on a
+  port, not both. `set_rumble` and `set_rumble_port` are unchanged.
+
+### Docs (after the v0.5.0 tag)
 
 - `docs/ECOSYSTEM.md`: Mulberry and Olive are released (repos, binaries, platforms); the fruit
   table gains each fruit's latest release; the iOS app has all four Rust fruits built in; the four

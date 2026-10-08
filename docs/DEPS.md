@@ -7,8 +7,10 @@ in step.
 
 ## The table
 
-The versions in fruit-basket v0.4.0, unchanged in v0.5.0. The consumers match them when they
-re-pin to either.
+The versions in fruit-basket v0.4.0, unchanged in v0.5.0 and v0.6.0 (v0.6.0's sticks and
+two-motor rumble use gilrs's `Axis` and force feedback inside basket-app, and its API returns
+plain numbers, so no new type crosses the API). The consumers match them when they re-pin to
+any of the three.
 
 | Crate | Requirement | Locked in v0.4.0 | In the fruit-basket API | Used by |
 |---|---|---|---|---|
