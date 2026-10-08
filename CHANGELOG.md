@@ -3,7 +3,7 @@
 All three crates (`basket-ui`, `basket-app`, `basket-build`) share one version and one tag. Apps
 pin them by git tag (see the README).
 
-## v0.6.0 — unreleased
+## v0.6.0 — 2026-10-08
 
 One additive feature: analog sticks and two-motor rumble for consoles that have them (Fig's
 DualShock first). Nothing was renamed, moved or removed, no public struct gained a field and no
