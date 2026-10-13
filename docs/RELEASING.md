@@ -97,7 +97,8 @@ Where things stand (2026-10-07): fruit-basket v0.5.0 is tagged (`f0b3a22`, tag C
 adopted by every consumer: Strawberry v1.7.1, Crabapple v1.0.0, Mulberry v0.3.1, Olive v0.3.0
 and the launcher v1.3.0 pin it. The launcher uses neither rumble nor system tags. The five
 classic fruits (Plum, Cherry, Kiwi, Durian, Coconut) were built on v0.6.0 and released v1.0.0 on
-2026-10-13 pinning it; none of them is on the site yet.
+2026-10-13 pinning it. All five are in the feed (site `a929266`), the launcher v1.4.0 is mirrored
+(`e34659a`), and Android v0.6.0 and TestFlight 0.8.0 (build `20261013.0351`) carry all five.
 
 ### 3. The site
 

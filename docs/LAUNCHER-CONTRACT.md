@@ -125,7 +125,7 @@ anything inside it. `members` (launcher v1.4.0 and later) lists name endings for
 Durian (No. 21) is its first user, with `ext .neo`, `archives .zip` and
 `members .p1 .m1 .s1 .c1 -p1.bin -m1.bin -c1.bin .ep1 .sp2` (durian `docs/ROM-FORMAT.md`). The key
 is additive: launchers before v1.4.0 ignore it and list no sets, only `.neo` files. The feed
-generator must emit it for Durian before its entry goes live.
+generator emits it from site `a929266`.
 
 ## The feed
 
