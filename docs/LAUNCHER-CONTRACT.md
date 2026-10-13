@@ -19,7 +19,8 @@ One file per fruit, in the fruit's directory on the site. Each line is `key<TAB>
 starting with `#`, and blank lines, are skipped. A fruit without a `LAUNCHER` file is left out of
 the feed. Grenadine, which has no build, is one.
 
-Lists (`ext`, `archives`, the templates, `carry`, `art`, `slots`) are separated by spaces.
+Lists (`ext`, `archives`, `members`, the templates, `carry`, `art`, `slots`) are separated by
+spaces.
 Templates are argument lists: each word becomes one argument after its placeholders are filled.
 
 | Key | Required | Meaning | Placeholders | Launcher version |
@@ -42,6 +43,7 @@ Templates are argument lists: each word becomes one argument after its placehold
 | `art` | no | Where the emulator keeps a game's cover picture: PNG paths, tried in order. Read only as pictures. A path with a placeholder that has nothing to fill it is skipped. | `{rom_dir}` `{stem}` `{data}` `{code}` `{cache}` | v1.1.0 |
 | `slots` | no | The lowest and highest save slot the emulator loads, two whole numbers, lowest first (`1 8`). Saves outside them are hidden from the saves lists, covers and Continue. Without it, every slot shows. | none | v1.1.1 |
 | `archives` | no | Archive extensions the fruit opens itself (`.zip`), written like `ext`. See [Archives](#archives). | none | v1.2.0 |
+| `members` | no | Name endings that claim an archive from `archives` when a file inside it ends with one (`.p1 -p1.bin`), for games made of several files with no one game extension. Never claims a loose file. See [members](#members). | none | v1.4.0 |
 | `oldest` | no | The oldest release tag the feed offers. See [oldest](#oldest). | none | site only, not in the feed |
 
 ### Placeholders
@@ -105,6 +107,26 @@ A fruit with `archives` (launcher v1.2.0 and later) can be given a game inside a
   of the file inside it.
 - A fruit without `archives` never takes an archive. Launchers before v1.2.0 ignore the key.
 
+### members
+
+Some games are a set of files with no one game file among them. A Neo Geo set in MAME's layout
+(`mslug.zip`) holds ROM chips like `201-p1.p1` and `gladmort-p1.bin`, so no `ext` matches
+anything inside it. `members` (launcher v1.4.0 and later) lists name endings for those files:
+
+- A zip from the fruit's `archives` is its game when a file inside it ends with one of `ext` or
+  one of `members`, matched case-insensitively.
+- `members` is read only inside archives. A loose chip is never listed as a game, and a fruit with
+  `members` but no `archives` claims nothing through it.
+- A set claimed only through `members` gets its lowercase zip stem as `{code}` (`mslug`), so a
+  `compat.txt` that goes by set name finds it.
+- Pick endings that no other fruit's games contain, so another fruit's zip is never taken for a
+  set.
+
+Durian (No. 21) is its first user, with `ext .neo`, `archives .zip` and
+`members .p1 .m1 .s1 .c1 -p1.bin -m1.bin -c1.bin .ep1 .sp2` (durian `docs/ROM-FORMAT.md`). The key
+is additive: launchers before v1.4.0 ignore it and list no sets, only `.neo` files. The feed
+generator must emit it for Durian before its entry goes live.
+
 ## The feed
 
 `feed.json`, schema 1, is written by the site's `feedgen.py` and signed with minisign
@@ -133,6 +155,7 @@ are present since launcher v0.1.0 unless the table says otherwise.
 | `pixel` | bool | `pixel` | v0.1.0 |
 | `ext` | string[] | `ext` | v0.1.0 |
 | `archives` | string[] | `archives`, empty when unset | v1.2.0 |
+| `members` | string[] | `members`, empty when unset; only meaningful with `archives` | v1.4.0 |
 | `status` | `"released"` or `"growing"` | `status` | v0.1.0 |
 | `summary` | string | The fruit's line in the site's fruit-basket `DESCRIPTIONS`. | v0.1.0 |
 | `blurb` | string | `blurb` | v0.1.0 |

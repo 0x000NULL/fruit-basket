@@ -10,7 +10,9 @@ Public site: https://projects.ethanaldrich.net/fruit-basket/
 
 Status is the fruit's `status` in the launcher feed (`released` or `growing`); Grenadine has no
 feed entry. Repos marked private are not public on GitHub; their builds are published on the site.
-Latest is the newest release on the site as of 2026-10-06.
+Latest is the newest release on the site as of 2026-10-06. The five classic fruits (Nos. 11, 17,
+18, 21 and 22) released v1.0.0 on GitHub on 2026-10-13 and are not on the site or in the feed
+yet, so their Latest is the GitHub release.
 
 | No. | Fruit | System | Repo | Binary | Status | Latest |
 |---:|---|---|---|---|---|---|
@@ -24,6 +26,11 @@ Latest is the newest release on the site as of 2026-10-06.
 | 8 | Mulberry | SNES | `mulberry` (private) | `mulberry` | released | v0.3.1 |
 | 9 | Olive | Game Boy and Game Boy Color | `olive` (private) | `olive` | released | v0.3.0 |
 | 10 | Pear | DS | `pear` (private) | `pear` | released | v1.0.0 |
+| 11 | Plum | Genesis / Mega Drive | `plum` (private) | `plum` | not in the feed yet | v1.0.0 |
+| 17 | Cherry | Master System and Game Gear | `cherry` (private) | `cherry` | not in the feed yet | v1.0.0 |
+| 18 | Kiwi | PC Engine / TurboGrafx-16 | `kiwi` (private) | `kiwi` | not in the feed yet | v1.0.0 |
+| 21 | Durian | Neo Geo (MVS and AES) | `durian` (private) | `durian` | not in the feed yet | v1.0.0 |
+| 22 | Coconut | Atari 2600 | `coconut` (private) | `coconut` | not in the feed yet | v1.0.0 |
 
 - **Pomegranate** (No. 1) is a PS2 emulator in C++20 for Windows and Linux. It needs no BIOS
   dump. It does not use the fruit-basket crates. It keeps its saves and settings in a data folder
@@ -50,6 +57,24 @@ Latest is the newest release on the site as of 2026-10-06.
   synthesized firmware). It composes both screens into one `Screen` and maps the mouse to the touch
   screen. Released v0.1.0 and v0.1.1 on 2026-10-07, v0.2.0 (3D accuracy) and v1.0.0 (speed,
   firmware settings kept) on 2026-10-08; no DSi mode.
+- **Plum** (No. 11) is a Genesis / Mega Drive emulator in Rust for Windows, macOS and Linux
+  (`.md`, `.gen`, `.smd`, also inside a `.zip`), on the fruit-basket crates (v0.6.0). Cartridges
+  only, with no BIOS. Released v1.0.0 on 2026-10-13 (tag on `8731c2e`).
+- **Cherry** (No. 17) is a Master System, Mark III and Game Gear emulator in Rust for Windows,
+  macOS and Linux (`.sms`, `.gg`, also inside a `.zip`), on the fruit-basket crates (v0.6.0). It
+  needs no BIOS: it boots straight into the cartridge. Released v1.0.0 on 2026-10-13 (`1d5a162`).
+- **Kiwi** (No. 18) is a PC Engine / TurboGrafx-16 emulator in Rust for Windows, macOS and Linux
+  (`.pce`, HuCards only), on the fruit-basket crates (v0.6.0). HuCards need no BIOS. Released
+  v1.0.0 on 2026-10-13 (`c5e4afd`).
+- **Durian** (No. 21) is a Neo Geo (MVS and AES cartridge) emulator in Rust for Windows, macOS and
+  Linux, on the fruit-basket crates (v0.6.0). It plays MAME-style `.zip` sets (`mslug.zip`) and
+  `.neo` files. It has its own clean-room HLE BIOS, so it needs no BIOS file. A set's chips share
+  no one game extension, so the launcher finds sets through the feed's `members` key (launcher
+  v1.4.0, see [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md#members)). It is the first core on
+  CORE-ABI v1.4. Released v1.0.0 on 2026-10-13 (`aba5862`).
+- **Coconut** (No. 22) is an Atari 2600 emulator in Rust for Windows, macOS and Linux (`.a26`,
+  also inside a `.zip`), on the fruit-basket crates (v0.6.0). The 2600 has no BIOS. Released
+  v1.0.0 on 2026-10-13 (`52e57fb`).
 - **Growing** fruits are planned. They are listed in the feed with no builds, so the launcher can
   show them and alert when one ripens (is released).
 
@@ -61,7 +86,9 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
 - **The launcher**: repo [`fruit-basket-launcher`](https://github.com/0x000NULL/fruit-basket-launcher)
   (public), binary `fruitbasket`. A Rust app on the fruit-basket crates. It shows the game
   library, installs, updates and rolls back fruits, starts games (with couch mode for a
-  controller and a TV), and updates itself from v1.0.0 on.
+  controller and a TV), and updates itself from v1.0.0 on. v1.4.0 (tagged 2026-10-13 on
+  `224c2b2`, not yet mirrored to the site) adds icons for the five classic fruits and the feed's
+  `members` key, for Durian's Neo Geo sets.
 - **fruit-basket** (this repo, public): `basket-ui`, `basket-app` and `basket-build`, the frontend
   crates the Rust fruits and the launcher share: the design language and software renderer,
   audio, pacing, saves, save-state slots, settings, the library, gamepads, the window icon and
@@ -79,7 +106,9 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
   files or the launcher's install flow, and its Basket tab lists the built-in and growing fruits.
   It links each core in-process through a C ABI (`gba-ffi` in GBA_Emulator, `nes-ffi` in
   crabapple, `olive-ffi` in olive, `snes-ffi` in mulberry, each pinned by git rev; the contract is
-  the iOS repo's `docs/CORE-ABI.md`). It uses none of the
+  the iOS repo's `docs/CORE-ABI.md`). That contract is at v1.4, which adds games made of several
+  files (zip sets), set names and an arcade cabinet's settings; Durian uses v1.4 and is so far its
+  only core. It uses none of the
   fruit-basket crates. Its design comes from the mobile mockups and their token file, a sibling of
   `basket-ui/tokens.json`. No PS2 for now.
 - **Fruit Basket for Android**: repo `fruit-basket-android` (private). One Kotlin/Compose app
@@ -117,11 +146,12 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
      no fruit-basket crates)   its self-update)
 ```
 
-- Strawberry, Crabapple, Mulberry, Olive, Pear, Fig and the launcher depend on all three fruit-basket
-  crates, each pinning a tag. After a dependency refresh ([DEPS.md](DEPS.md)) all of them pin the
+- Strawberry, Crabapple, Mulberry, Olive, Pear, Fig, Plum, Cherry, Kiwi, Durian, Coconut and the
+  launcher depend on all three fruit-basket crates, each pinning a tag. After a dependency refresh ([DEPS.md](DEPS.md)) all of them pin the
   same one. A feature release need only be adopted by the apps that use it. As of 2026-10-07 the
   six fruits and the launcher (v1.3.0) all pin v0.5.0. The launcher uses neither rumble nor
-  system tags: its GB/GBC label reads the cartridge header itself.
+  system tags: its GB/GBC label reads the cartridge header itself. Plum, Cherry, Kiwi, Durian and
+  Coconut pin v0.6.0 at their v1.0.0.
 - Pomegranate and Grenadine are C++ and use none of them.
 - The launcher depends on every fruit only through the feed: the `LAUNCHER` contract and each
   fruit's command-line flags and file names. It never links against a fruit.

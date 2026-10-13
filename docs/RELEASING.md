@@ -10,8 +10,9 @@ that a fruit or the launcher needs.
 1. fruit-basket        tests green → signed tag vX.Y.Z → tag CI green
         │
         ▼
-2. consumers           Strawberry, Crabapple, Mulberry, Olive (and the launcher, when
-                       it needs the release) re-pin to vX.Y.Z, fix the fallout,
+2. consumers           Strawberry, Crabapple, Mulberry, Olive, Pear, Fig, Plum,
+                       Cherry, Kiwi, Durian, Coconut (and the launcher, when it
+                       needs the release) re-pin to vX.Y.Z, fix the fallout,
                        tests green → release on GitHub
         │
         ▼
@@ -52,9 +53,9 @@ So does a new variant on a public enum, for every exhaustive `match`. Add trait 
 default, new functions and new types instead, and prove it by building each consumer against the
 release candidate:
 
-1. For each consumer (Strawberry `GBA_Emulator`, `crabapple`, `mulberry`, `olive`,
-   `fruit-basket-launcher`), make a throwaway worktree at its `HEAD`
-   (`git worktree add --detach <scratch>/wt-<repo> HEAD`), so its checkout and `Cargo.lock` are
+1. For each consumer (Strawberry `GBA_Emulator`, `crabapple`, `mulberry`, `olive`, `pear`,
+   `fig`, `plum`, `cherry`, `kiwi`, `durian`, `coconut`, `fruit-basket-launcher`), make a throwaway worktree at
+   its `HEAD` (`git worktree add --detach <scratch>/wt-<repo> HEAD`), so its checkout and `Cargo.lock` are
    not touched.
 2. In the worktree, point the git dependency at this checkout with `--config` flags, never by
    editing its `Cargo.toml`:
@@ -78,7 +79,8 @@ v0.5.0 was checked this way against all five consumers at their `HEAD` on 2026-1
 
 ### 2. Consumers
 
-For each of Strawberry, Crabapple, Mulberry and Olive, and the launcher when it needs the release
+For each of Strawberry, Crabapple, Mulberry, Olive, Pear, Fig, Plum, Cherry, Kiwi, Durian and
+Coconut, and the launcher when it needs the release
 (it must follow a dependency refresh, but can skip a feature release it does not use):
 
 1. Change every `tag = "vOLD"` for `basket-ui`, `basket-app` and `basket-build` to the new tag,
@@ -93,7 +95,9 @@ dependencies.
 
 Where things stand (2026-10-07): fruit-basket v0.5.0 is tagged (`f0b3a22`, tag CI green) and
 adopted by every consumer: Strawberry v1.7.1, Crabapple v1.0.0, Mulberry v0.3.1, Olive v0.3.0
-and the launcher v1.3.0 pin it. The launcher uses neither rumble nor system tags.
+and the launcher v1.3.0 pin it. The launcher uses neither rumble nor system tags. The five
+classic fruits (Plum, Cherry, Kiwi, Durian, Coconut) were built on v0.6.0 and released v1.0.0 on
+2026-10-13 pinning it; none of them is on the site yet.
 
 ### 3. The site
 
