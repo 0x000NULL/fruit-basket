@@ -11,7 +11,7 @@ that a fruit or the launcher needs.
         │
         ▼
 2. consumers           Strawberry, Crabapple, Mulberry, Olive, Pear, Fig, Plum,
-                       Cherry, Kiwi, Durian, Coconut (and the launcher, when it
+                       Cherry, Kiwi, Durian, Coconut, Kumquat (and the launcher, when it
                        needs the release) re-pin to vX.Y.Z, fix the fallout,
                        tests green → release on GitHub
         │
@@ -54,7 +54,7 @@ default, new functions and new types instead, and prove it by building each cons
 release candidate:
 
 1. For each consumer (Strawberry `GBA_Emulator`, `crabapple`, `mulberry`, `olive`, `pear`,
-   `fig`, `plum`, `cherry`, `kiwi`, `durian`, `coconut`, `fruit-basket-launcher`), make a throwaway worktree at
+   `fig`, `plum`, `cherry`, `kiwi`, `durian`, `coconut`, `kumquat`, `fruit-basket-launcher`), make a throwaway worktree at
    its `HEAD` (`git worktree add --detach <scratch>/wt-<repo> HEAD`), so its checkout and `Cargo.lock` are
    not touched.
 2. In the worktree, point the git dependency at this checkout with `--config` flags, never by
@@ -79,8 +79,8 @@ v0.5.0 was checked this way against all five consumers at their `HEAD` on 2026-1
 
 ### 2. Consumers
 
-For each of Strawberry, Crabapple, Mulberry, Olive, Pear, Fig, Plum, Cherry, Kiwi, Durian and
-Coconut, and the launcher when it needs the release
+For each of Strawberry, Crabapple, Mulberry, Olive, Pear, Fig, Plum, Cherry, Kiwi, Durian,
+Coconut and Kumquat, and the launcher when it needs the release
 (it must follow a dependency refresh, but can skip a feature release it does not use):
 
 1. Change every `tag = "vOLD"` for `basket-ui`, `basket-app` and `basket-build` to the new tag,
@@ -99,6 +99,9 @@ and the launcher v1.3.0 pin it. The launcher uses neither rumble nor system tags
 classic fruits (Plum, Cherry, Kiwi, Durian, Coconut) were built on v0.6.0 and released v1.0.0 on
 2026-10-13 pinning it. All five are in the feed (site `a929266`), the launcher v1.4.0 is mirrored
 (`e34659a`), and Android v0.6.0 and TestFlight 0.8.0 (build `20261013.0351`) carry all five.
+Kumquat was built on v0.6.0 too and released v1.0.0 on 2026-10-15; it is in the feed (site
+`0efa154`), the launcher v1.5.0 with its icon is mirrored (`a7a5a21`), and Android v0.7.0
+carries it (`2a62b01`).
 
 ### 3. The site
 
