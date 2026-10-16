@@ -10,8 +10,9 @@ Public site: https://projects.ethanaldrich.net/fruit-basket/
 
 Status is the fruit's `status` in the launcher feed (`released` or `growing`); Grenadine has no
 feed entry. Repos marked private are not public on GitHub; their builds are published on the site.
-Latest is the newest release on the site as of 2026-10-15, when Kumquat (No. 14) went live in the
-feed at v1.0.0 alongside Fig v1.0.1 (site `0efa154`). The five classic fruits (Nos. 11, 17, 18,
+Latest is the newest release on the site as of 2026-10-15, when Starfruit (No. 5) went live in the
+feed at v1.0.0 (site `049ea9b`). Kumquat (No. 14) went live at v1.0.0 the same day, alongside Fig
+v1.0.1 (site `0efa154`). The five classic fruits (Nos. 11, 17, 18,
 21 and 22) went live at v1.0.0 on 2026-10-13 (site `a929266`).
 
 | No. | Fruit | System | Repo | Binary | Status | Latest |
@@ -20,7 +21,7 @@ feed at v1.0.0 alongside Fig v1.0.1 (site `0efa154`). The five classic fruits (N
 | 2 | Strawberry | Game Boy Advance | `GBA_Emulator` (private) | `strawberry` | released | v1.7.1 |
 | 3 | Grenadine | PlayStation 2 static recompiler | `recomp` (private) | `recomp` (a tool, not an emulator) | paused, no build, not in the feed | none |
 | 4 | Fig | PlayStation | `fig` (private) | `fig` | released | v1.0.1 |
-| 5 | Starfruit | Nintendo 64 | `starfruit` (private) | `starfruit` | growing | none |
+| 5 | Starfruit | Nintendo 64 | `starfruit` (private) | `starfruit` | released | v1.0.0 |
 | 6 | Mangosteen | GameCube | none yet | none yet | growing | none |
 | 7 | Crabapple | NES / Famicom | `crabapple` (private) | `crabapple` | released | v1.0.0 |
 | 8 | Mulberry | SNES | `mulberry` (private) | `mulberry` | released | v0.3.1 |
@@ -41,6 +42,13 @@ feed at v1.0.0 alongside Fig v1.0.1 (site `0efa154`). The five classic fruits (N
 - **Grenadine** (No. 3) turns a PS2 game's ELF or disc image into a native binary: Pomegranate,
   pressed. The tool and its repo are both called `recomp`. It is paused after milestone M3.4,
   with no build, so it has no `LAUNCHER` file and no feed entry.
+- **Starfruit** (No. 5) is a Nintendo 64 emulator in Rust for Windows, macOS and Linux (`.z64`,
+  `.n64`, `.v64`, also inside a `.zip`), on the fruit-basket crates (v0.6.0). It needs no PIF ROM:
+  it boots cartridges with its own CIC/IPL3 HLE. The RDP is a clean-room software rasteriser with no
+  microcode HLE. Desktop builds are PGO-built and keep their threads on one L3 cache group
+  (`STARFRUIT_PIN=0` turns that off). GoldenEye passes the speed gate on a quiet machine and can drop
+  frames in heavy scenes on a loaded one or on phones (Ethan, 2026-10-15). It is on CORE-ABI v1.5.
+  Released v1.0.0 on 2026-10-15 (tag on `d31cb51`).
 - **Crabapple** (No. 7) is an NES and Famicom emulator in Rust for Windows, macOS and Linux,
   built on the fruit-basket crates like Strawberry.
 - **Mulberry** (No. 8) is an SNES emulator in Rust for Windows, macOS and Linux (`.sfc`,
@@ -109,22 +117,24 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
   release. The feed is signed with minisign (`feed.json.minisig`, key ID `9A7C56F99E6460E9`).
   The launcher trusts a build only when its hash is in a feed whose signature checks out.
 - **Fruit Basket for iOS**: repo `fruit-basket-ios` (private), App Store name "Fruit Basket Emu",
-  on TestFlight since 2026-10-04 (0.8.0, build `20261013.0351`, since 2026-10-13). One SwiftUI app
-  with eleven cores built in: Strawberry, Fig, Crabapple, Mulberry, Olive, Pear, Plum, Cherry,
-  Kiwi, Durian and Coconut. The App Store forbids downloading code, so it does not use the feed,
+  on TestFlight since 2026-10-04 (0.10.0, build `20261016.1508`, since 2026-10-16). One SwiftUI app
+  with thirteen cores built in: Strawberry, Fig, Crabapple, Mulberry, Olive, Pear, Plum, Cherry,
+  Kiwi, Durian, Coconut, Kumquat (0.9.0) and Starfruit (0.10.0). Kumquat and Starfruit run on a
+  frame queue, two frames ahead of the screen. The App Store forbids downloading code, so it does not use the feed,
   the `LAUNCHER` files or the launcher's install flow, and its Basket tab lists the built-in and
   growing fruits. It links each core in-process through a C ABI (each fruit's `*-ffi` crate, such
   as `gba-ffi` in GBA_Emulator or `durian-ffi` in durian, pinned by git rev; the contract is the
-  iOS repo's `docs/CORE-ABI.md`). That contract is at v1.4, which adds games made of several files
-  (zip sets), set names and an arcade cabinet's settings; Durian uses v1.4 and is so far its only
-  core. It uses none of the fruit-basket crates. Its design comes from the mobile mockups and their token file, a sibling of
+  iOS repo's `docs/CORE-ABI.md`). That contract is at v1.6: v1.4 added games made of several files
+  (zip sets) for Durian, v1.5 is Starfruit's (Nintendo 64), and v1.6 Kumquat's (UMD images and
+  the memory stick). It uses none of the fruit-basket crates. Its design comes from the mobile mockups and their token file, a sibling of
   `basket-ui/tokens.json`. No PS2 for now.
 - **Fruit Basket for Android**: repo `fruit-basket-android` (private). One Kotlin/Compose app
-  with twelve cores built in through a single cdylib, `rust/fbandroid`, over the same `*-ffi`
-  crates as iOS (CORE-ABI up to v1.6): iOS's eleven plus Kumquat. It does not use the feed, the `LAUNCHER` files or the
+  with the same thirteen cores as iOS built in through a single cdylib, `rust/fbandroid`, over the
+  same `*-ffi` crates (CORE-ABI up to v1.6). It does not use the feed, the `LAUNCHER` files or the
   fruit-basket crates. It ships as a signed APK on the site under `site/fruit-basket/android/`;
-  that directory has no `LAUNCHER` file, so the APK never enters the feed. At v0.7.0
-  (versionCode 8, Kumquat and Fig v1.0.1) since 2026-10-15, live on the site (`2a62b01`). From v0.2.0 it updates itself in-app from the site's own
+  that directory has no `LAUNCHER` file, so the APK never enters the feed. v0.7.0 (versionCode 8)
+  added Kumquat and Fig v1.0.1 on 2026-10-15, v0.8.0 (versionCode 9) Starfruit on 2026-10-16, and
+  v0.8.1 (versionCode 10, polish) is live on the site since 2026-10-16 (`977013d`). From v0.2.0 it updates itself in-app from the site's own
   `fruit-basket/android/update.json`, signed with the feed's key (ID `9A7C56F99E6460E9`) and
   verified by `fbandroid` with `minisign-verify`. It checks the APK's size, SHA-256, versionCode
   and signing certificate, then hands it to Android's installer. The launcher's feed is not
@@ -142,7 +152,7 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
      Mulberry, Olive, Fig,      uses all three)       (fruit-basket-launcher)
       Pear, Plum, Cherry,
      Kiwi, Durian, Coconut,
-            Kumquat
+       Kumquat, Starfruit
               │                        │                          ▲
               │  GitHub releases       │                          │ reads and verifies
               ▼                        ▼                          │ feed.json + .minisig,
@@ -157,17 +167,17 @@ feed. [LAUNCHER-CONTRACT.md](LAUNCHER-CONTRACT.md) describes them.
      no fruit-basket crates)   its self-update)
 ```
 
-- Strawberry, Crabapple, Mulberry, Olive, Pear, Fig, Plum, Cherry, Kiwi, Durian, Coconut, Kumquat
-  and the launcher depend on all three fruit-basket crates, each pinning a tag. After a dependency refresh
+- Strawberry, Crabapple, Mulberry, Olive, Pear, Fig, Plum, Cherry, Kiwi, Durian, Coconut, Kumquat,
+  Starfruit and the launcher depend on all three fruit-basket crates, each pinning a tag. After a dependency refresh
   ([DEPS.md](DEPS.md)) all of them pin the same one. A feature release need only be adopted by the apps that use it. As of 2026-10-07 the
   six fruits and the launcher (v1.3.0) all pin v0.5.0. The launcher uses neither rumble nor
   system tags: its GB/GBC label reads the cartridge header itself. Plum, Cherry, Kiwi, Durian and
-  Coconut pin v0.6.0 at their v1.0.0, and so does Kumquat.
+  Coconut pin v0.6.0 at their v1.0.0, and so do Kumquat and Starfruit.
 - Pomegranate and Grenadine are C++ and use none of them.
 - The launcher depends on every fruit only through the feed: the `LAUNCHER` contract and each
   fruit's command-line flags and file names. It never links against a fruit.
 - The site depends on GitHub releases from every fruit and from the launcher.
-- The iOS app depends on its eleven Rust cores through their `*-ffi` crates, not on this repo. A
+- The iOS app depends on its thirteen Rust cores through their `*-ffi` crates, not on this repo. A
   change to a core's save-state format breaks iOS players' states (the app falls back to the
   battery save); a change to an `fb_*` signature needs a CORE-ABI version bump.
 - The Android app depends on the same `*-ffi` crates, through `fbandroid`. A core's save-state
