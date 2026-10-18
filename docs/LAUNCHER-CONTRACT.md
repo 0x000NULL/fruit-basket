@@ -27,7 +27,7 @@ Templates are argument lists: each word becomes one argument after its placehold
 |---|---|---|---|---|
 | `no` | yes | The fruit's number, a whole number. No two fruits may share one. The feed is sorted by it. | none | v0.1.0 |
 | `system` | yes | The console, as shown (`GBA`, `GB · GBC`). | none | v0.1.0 |
-| `ext` | yes | The file extensions the fruit plays, with the dot (`.chd .iso`). Matched case-insensitively against the end of the file name. In a fruit's own `games/` folder that is enough; in an extra folder a file goes to the *first* fruit in feed order that lists its extension, so overlapping `ext` lists between fruits (today `.cue .chd .iso` between Pomegranate and the growing Fig and Mangosteen) send the file to the lower-numbered fruit. Resolve overlaps before the second fruit ships. | none | v0.1.0 |
+| `ext` | yes | The file extensions the fruit plays, with the dot (`.chd .iso`). Matched case-insensitively against the end of the file name. In a fruit's own `games/` folder that is enough. In an extra folder, a file that only one installed fruit plays goes to it; one that several play (`.iso`, `.cue`, `.chd`, `.zip` today) goes where the [disc probe](#shared-extensions-the-disc-probe) says, else to the lowest-numbered of them. | none | v0.1.0 (probe from v1.6.0) |
 | `status` | yes | `released` or `growing`. A growing fruit must have no builds; a released one must have at least one. | none | v0.1.0 |
 | `blurb` | yes | One or two sentences about the fruit's name and mark. | none | v0.1.0 |
 | `bin` | when `released` | The emulator's executable name, without `.exe`. | none | v0.2.0 |
@@ -126,6 +126,37 @@ Durian (No. 21) is its first user, with `ext .neo`, `archives .zip` and
 `members .p1 .m1 .s1 .c1 -p1.bin -m1.bin -c1.bin .ep1 .sp2` (durian `docs/ROM-FORMAT.md`). The key
 is additive: launchers before v1.4.0 ignore it and list no sets, only `.neo` files. The feed
 generator emits it from site `a929266`.
+
+### Shared extensions: the disc probe
+
+Several disc fruits list the same extensions. When more than one installed fruit plays a file in
+an extra folder (launcher v1.6.0 and later), the launcher reads a few KB of the file to see which
+console it is for, and gives it to the fruit whose `system` is that console's:
+
+| Console | `system` it matches | Marker |
+|---|---|---|
+| GameCube | `GameCube` | C2339F3Dh at 1Ch. In a CISO (`CISO` header, 32 KB map), the same at 1Ch of the first data block. |
+| PSP | `PSP` | The ISO9660 primary volume descriptor (sector 16, `CD001`) has system identifier `PSP GAME`. |
+| PS2 | `PS2` | `SYSTEM.CNF` in the ISO9660 root directory has a `BOOT2` line. |
+| PS1 | `PS1` | `SYSTEM.CNF` has a `BOOT` line and no `BOOT2`. |
+
+- ISO9660 is read from 2048-byte sectors, or raw 2352-byte ones (mode 1 or mode 2 form 1).
+- A `.cue` is probed through the first file its `FILE` line names, beside it.
+- A `.zip` is probed through its first entry ending `.iso .gcm .ciso .bin .img`. A stored entry is
+  read in place. A compressed one is inflated no further than the first 4 MB.
+- A `.chd` is not probed: telling PS1 from PS2 would mean decompressing a hunk.
+- Unknown (no marker, a read error, no fruit with that `system` installed): the lowest-numbered
+  fruit, as before the probe.
+- `system` is compared case-insensitively with the table, so these four fruits must keep those
+  `system` values. A new disc fruit that shares an extension needs a marker added to the launcher
+  first, or it only gets files the others' markers do not claim (Saturn and Dreamcast markers are
+  being added for Peach and Orange).
+- Results are cached by path, size and modification time. A scan waits at most 2 s for probes; a
+  file still being read (a slow share) goes by the old rule until a later scan.
+- A file in a fruit's own `games/` folder is never probed. Launchers before v1.6.0 use the old
+  rule for everything.
+- A disc fruit that opens zips lists `.zip` under `archives`, never `ext`: a fruit with `.zip` in
+  `ext` plays every zip, and an unknown probe would hand other fruits' zips to the lowest number.
 
 ## The feed
 
