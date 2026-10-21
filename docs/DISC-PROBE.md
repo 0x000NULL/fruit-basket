@@ -41,10 +41,12 @@ The probe reads the track the console boots from, through the same `FbFile` read
   high-density area (track 3 in a Redump CUE/GDI), not track 1, whose low-density data track holds
   no IP.BIN.
 - **GDI**: its track list, the same rule (track 3).
-- **CHD**: through its own decoder (libchdr, already in the apps for Kumquat).
-  - The track metadata says what it holds before any hunk is read: CD tracks (`CHT2`/`CHCD`),
-    GD-ROM tracks (`CHGT`/`CHGD`), or a DVD (`DVD `). The GD-ROM metadata alone decides
-    Dreamcast.
+- **CHD**: through its own decoder (libchdr on desktop; in the apps the `chd` crate, its Rust
+  port, already there for Kumquat).
+  - The track metadata says what it holds before any hunk is read: CD tracks (`CHT2` current,
+    `CHTR` older, `CHCD` legacy), GD-ROM tracks (`CHGD` current, the only one in Orange's
+    images; `CHGT` legacy, still read), or a DVD (`DVD `). The GD-ROM metadata alone decides
+    Dreamcast. (Tag names as the `chd` crate 0.3.4 defines them, `src/metadata.rs`.)
   - Otherwise it reads the hunks holding the signature: one for GameCube and Saturn; two to four
     for the PlayStation rows (the PVD in hunk 2, the root directory, `SYSTEM.CNF`; a CD hunk is
     8 frames). A DVD CHD's hunks are 2048 or 4096 bytes.
