@@ -1,15 +1,17 @@
 # Which fruit plays a disc: the probe
 
-Status: approved by the Orchestrator (2026-10-21). It replaces the launcher's
+Status: approved by the Orchestrator (2026-10-21), amended the same day after launcher-7e's
+review. It replaces the launcher's
 [shared-extensions probe](LAUNCHER-CONTRACT.md#shared-extensions-the-disc-probe) (launcher
-v1.6.0) and is the rule for the apps' importers too (Android `GameStore`, iOS). Launcher and apps
-move to it when the next disc fruit (Peach, Mango or Orange) ships.
+v1.6.0) and is the rule for the apps' importers too (Android `GameStore`, iOS). When each moves
+to it is under [Versions](#versions).
 
 ## The rule
 
 Disc images share extensions (`.cue`, `.chd`, `.iso`, `.bin`, `.zip` today; `.gdi` with Orange).
-A file one installed fruit plays goes to it, as before. Once two fruits claim an extension, the
-extension alone never decides:
+A file whose extension belongs to a fruit with a row in [the table](#the-signatures-and-who-owns-them)
+is always probed, even when only one installed fruit claims it; the extension alone never decides.
+(The one exception is under Containers: `.cso`.)
 
 1. Run **every** installed disc fruit's probe on the file. A probe is a signature check (fixed
    bytes at a fixed place), never a heuristic, and never "this is a CUE, so it must be mine".
@@ -18,7 +20,11 @@ extension alone never decides:
 4. **More than one**: ask the player which console it is for, and report it: two real signatures
    matching one disc is a bug in a probe, fixed in that fruit's repo.
 5. A read error is reported as one ("couldn't read the disc"), not as "not recognised".
+6. **Desktop only:** a probe that hasn't answered yet (a slow share) is "pending", never "not
+   recognised"; a later scan finishes it. The apps run their probes synchronously at import, so
+   their results are only match, none, tied or read error.
 
+A refused file can still be given to a fruit by hand ("Play with…") wherever the UI has that.
 A result is cached by path, size and modification time. A file in a fruit's own `games/` folder
 is never probed (launcher), and an app's import routes once, at import time.
 
@@ -26,20 +32,30 @@ is never probed (launcher), and an app's import routes once, at import time.
 
 The probe reads the track the console boots from, through the same `FbFile` reader the cores use:
 
-- **ISO / BIN**: 2048-byte sectors, or raw 2352-byte ones (mode 1 data at offset 16; mode 2
-  form 1 at offset 24).
-- **CUE**: the first data track its `FILE`/`TRACK` lines name, beside it. **Dreamcast is the
-  exception**: a GD-ROM's boot track is the first data track of the high-density area (track 3
-  in a Redump CUE/GDI), not track 1, whose low-density data track holds no IP.BIN.
+- **ISO / BIN**: 2048-byte sectors; raw 2352-byte ones, with the user data at the offset the
+  sector's own mode byte gives (byte 15: 1 → 16, 2 → 24, mode 2 form 1); or MODE2/2336 images:
+  2336-byte stored sectors (sync and header not stored), the user data at offset 8 of each stored
+  sector, after the 8-byte subheader.
+- **CUE**: the first **data** track its `FILE`/`TRACK` lines name, beside it (AUDIO tracks are
+  skipped). **Dreamcast is the exception**: a GD-ROM's boot track is the first data track of the
+  high-density area (track 3 in a Redump CUE/GDI), not track 1, whose low-density data track holds
+  no IP.BIN.
 - **GDI**: its track list, the same rule (track 3).
-- **CHD**: through its own decoder (libchdr, already in the apps for Kumquat). The CHD's track
-  metadata says what it holds before any hunk is read: CD tracks (`CHT2`/`CHCD`), GD-ROM tracks
-  (`CHGT`/`CHGD`), or a DVD (`DVD `), which already separates Dreamcast and PSP/PS2/GameCube
-  from CD consoles. The signature is then read from the boot track as above: one hunk.
+- **CHD**: through its own decoder (libchdr, already in the apps for Kumquat).
+  - The track metadata says what it holds before any hunk is read: CD tracks (`CHT2`/`CHCD`),
+    GD-ROM tracks (`CHGT`/`CHGD`), or a DVD (`DVD `). The GD-ROM metadata alone decides
+    Dreamcast.
+  - Otherwise it reads the hunks holding the signature: one for GameCube and Saturn; two to four
+    for the PlayStation rows (the PVD in hunk 2, the root directory, `SYSTEM.CNF`; a CD hunk is
+    8 frames). A DVD CHD's hunks are 2048 or 4096 bytes.
+  - **Caps**, checked before the decoder is called, in the launcher and the apps alike: a hunk
+    map of at most 16 MB, at most 4.5 M hunks, a hunk of at most 1 MB. Past a cap the file is
+    a read error. Raising the caps for odd layouts is not required.
 - **ZIP**: its first entry ending `.iso .gcm .ciso .bin .img`, as launcher v1.6.0 does (a stored
   entry read in place, a compressed one inflated no further than the first 4 MB). Durian's Neo
   Geo sets stay under `archives`, never probed as discs.
-- **CISO / CSO**: through their block maps.
+- **CISO** means GameCube's block map only. PSP's `.cso` is not probed while Kumquat is the only
+  fruit that claims it.
 
 ## The signatures and who owns them
 
@@ -51,7 +67,7 @@ shared extensions.
 |---:|---|---|---|---|
 | 1 | Pomegranate | PS2 | ISO9660 primary volume descriptor (sector 16, `CD001`) system identifier `PLAYSTATION`, and `SYSTEM.CNF` in the root with a `BOOT2` line | `ps2emu` (desktop only); today only the launcher's marker, no core probe |
 | 4 | Fig | PS1 | PVD system identifier `PLAYSTATION`, and `SYSTEM.CNF` with a `BOOT` line and no `BOOT2`, **or** no `SYSTEM.CNF` and `PSX.EXE` in the root (early discs boot it by default) | `fig`: **owed**. Fig's FFI (`docs/ffi-v1.3.md`) has no probe yet; Fig adds one with exactly this check |
-| 6 | Mango | GameCube | `C2339F3Dh` at `1Ch` (a CISO: of its first data block) | `mango` (0x000NULL/mango) `docs/ffi-v1.7.md`, part 2 › Additions › 7 "Core-less probe for the library", `fb_mango_probe` |
+| 6 | Mango | GameCube | `C2339F3Dh` at `1Ch` (a CISO: at `1Ch` of its first stored block, which follows the `8000h`-byte header: file offset `801Ch`) | `mango` (0x000NULL/mango) `docs/ffi-v1.7.md`, part 2 › Additions › 7 "Core-less probe for the library", `fb_mango_probe` |
 | 12 | Orange | Dreamcast | IP.BIN at the boot track's first sector starts `SEGA SEGAKATANA ` | `orange`: **owed** (no FFI doc yet) |
 | 13 | Peach | Saturn | sector 0 of the first data track starts `SEGA SEGASATURN ` | `peach` `docs/ffi-v1.8.md`, `fb_peach_probe` |
 | 14 | Kumquat | PSP | PVD system identifier `PSP GAME` | `kumquat` `docs/ffi-v1.6.md`, `fb_kumquat_probe` |
@@ -68,11 +84,29 @@ Notes:
 - A probe that needs the core (a title, a game id) still answers "mine or not" from the
   signature alone; the extra fields are for the library.
 
+## Test headers
+
+The launcher, the apps and each fruit's probe test against the same files, kept in basket: a
+few KB each, **synthetic only** (built by code, no bytes from any commercial disc), MIT. The set:
+GameCube, CISO, PS1 and PS2 cooked and raw, a PS1 disc with `PSX.EXE` and no `SYSTEM.CNF`, PSP,
+Saturn, and Dreamcast as CUE, GDI and CHD. Launcher-7e's builders are the first set.
+
 ## What changes from launcher v1.6.0
 
 - No match is refused, not given to the lowest-numbered fruit.
-- CHDs are probed (through their metadata and one hunk), not skipped.
-- Saturn and Dreamcast get rows; PS1 gains the no-`SYSTEM.CNF` case.
+- CHDs are probed (metadata, then the hunks holding the signature, under the caps), not skipped.
+- Saturn and Dreamcast get rows; PS1 gains the no-`SYSTEM.CNF` case; a CUE skips AUDIO tracks.
+- Files are probed even with a single claimant.
 - Two matches ask instead of picking.
 - The bytes live in each fruit's repo; the launcher and the apps implement this table and link to
   them.
+
+## Versions
+
+- **Desktop launcher:** the rule applies from the launcher's UI milestone (version: to be filled
+  in). Earlier installs, the next sega-probe release included, keep the fallback: none or a tie
+  goes to the lowest-numbered fruit, with a log line on a tie.
+- **Android:** from the next disc fruit's pin, the importer refuses with the reason in the
+  import summary (the summary lists reasons, not only a count), and asks about tied files in one
+  sheet at the end of the import.
+- **iOS:** to be set when the Mac is back.
