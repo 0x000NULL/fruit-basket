@@ -15,7 +15,10 @@ can't drift apart.
   builder there, regenerate, and copy the set here.
 - **`MANIFEST.tsv`** lists every file with the systems a probe must find: the feed's
   `system` values (`GameCube`, `PS2`, `PS1`, `PSP`, `Saturn`, `Dreamcast`),
-  comma-separated, or `none`.
+  comma-separated; `none` when the file reads fine but no signature matches; or
+  `read-error` when the container can't be read (DISC-PROBE.md rule 5: "couldn't read
+  the disc", not "not recognised"). The `none-*` and `error-*` file names match those
+  outcomes.
 
 ## Using them
 
@@ -31,8 +34,14 @@ Probe each file in the folder and compare the sorted set of systems with its lin
   is found only through track 3, as the `.cue`, the `.gdi` or the track itself.
 - The CHDs are v5 with an uncompressed map, so they test the metadata and hunk logic, not
   the codecs. `dreamcast-gd.chd` is decided by its `CHGD` metadata alone; its hunk is
-  zeros. `none-truncated.chd` is cut off inside its map and must be `none`, with no
-  panic.
+  zeros.
+- Two CHDs are read errors and must give `read-error`, with no panic:
+  - `error-truncated.chd` is cut off inside its map.
+  - `error-hunk-cap.chd` has a valid header that claims 2^40 bytes of data, which is
+    268 M hunks, past the 4.5 M-hunk cap. A probe must refuse it from the header,
+    before the decoder allocates the expanded map, which would be about 3 GB.
+- Launcher note: until its UI milestone, the desktop launcher can't report a read error,
+  so its own test counts `read-error` as `none`.
 - `double-gamecube-ps2.iso` matches two signatures on purpose: a PS2 volume that also
   carries the GameCube magic. A probe must find both. Per the rule, two matches are a
   probe bug and are reported, not settled by order.
