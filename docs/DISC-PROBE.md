@@ -108,7 +108,13 @@ Saturn, and Dreamcast as CUE, GDI and CHD. Launcher-7e's builders are the first 
 - **Desktop launcher:** the rule applies from the launcher's UI milestone (version: to be filled
   in). Earlier installs, the next sega-probe release included, keep the fallback: none or a tie
   goes to the lowest-numbered fruit, with a log line on a tie.
-- **Android:** from the next disc fruit's pin, the importer refuses with the reason in the
-  import summary (the summary lists reasons, not only a count), and asks about tied files in one
-  sheet at the end of the import.
-- **iOS:** to be set when the Mac is back.
+- **Android:** from the next disc fruit's pin (Peach), the importer refuses with the reason in
+  the import summary (the summary lists reasons, not only a count), and asks about tied files in
+  one sheet at the end of the import. Until that sheet exists, a tie is skipped ("matches more
+  than one console") and logged naming both fruits; it never falls through.
+- **iOS:** from the next disc fruit's pin (Peach), the importer refuses unmatched discs with the
+  reason in the import result and asks about tied files in one sheet at the end of the import
+  (UI-SPEC §22, fruit-basket-ios `842fede`).
+- **Both apps** check the PS1 row themselves until fig's own probe lands, and test that check
+  against `testdata/disc-probe` and its `MANIFEST.tsv`. Android's is `rust/fbandroid/src/ps1probe.rs`
+  in fruit-basket-android.
