@@ -70,14 +70,14 @@ shared extensions.
 | 1 | Pomegranate | PS2 | ISO9660 primary volume descriptor (sector 16, `CD001`) system identifier `PLAYSTATION`, and `SYSTEM.CNF` in the root with a `BOOT2` line | `ps2emu` (desktop only); today only the launcher's marker, no core probe |
 | 4 | Fig | PS1 | PVD system identifier `PLAYSTATION`, and `SYSTEM.CNF` with a `BOOT` line and no `BOOT2`, **or** no `SYSTEM.CNF` and `PSX.EXE` in the root (early discs boot it by default) | `fig`: **owed**. Fig's FFI (`docs/ffi-v1.3.md`) has no probe yet; Fig adds one with exactly this check |
 | 6 | Mango | GameCube | `C2339F3Dh` at `1Ch` (a CISO: at `1Ch` of its first stored block, which follows the `8000h`-byte header: file offset `801Ch`) | `mango` (0x000NULL/mango) `docs/ffi-v1.7.md`, part 2 › Additions › 7 "Core-less probe for the library", `fb_mango_probe` |
-| 12 | Orange | Dreamcast | IP.BIN at the boot track's first sector starts `SEGA SEGAKATANA ` | `orange`: **owed** (no FFI doc yet) |
+| 12 | Orange | Dreamcast | IP.BIN at the boot track's first sector starts `SEGA SEGAKATANA ` | `orange` `docs/ffi-v1.9.md`, `fb_orange_probe` |
 | 13 | Peach | Saturn | sector 0 of the first data track starts `SEGA SEGASATURN ` | `peach` `docs/ffi-v1.8.md`, `fb_peach_probe` |
 | 14 | Kumquat | PSP | PVD system identifier `PSP GAME` | `kumquat` `docs/ffi-v1.6.md`, `fb_kumquat_probe` |
 
 Notes:
 
 - Each signature's source is recorded in its owner's CLEAN-ROOM; a row is final only once the
-  owner has done so. Fig's PS1 row and Orange's Dreamcast row stay owed until then.
+  owner has done so. Fig's PS1 row stays owed until then.
 - PS1 and PS2 share the PVD identifier `PLAYSTATION`; the `BOOT`/`BOOT2` line is what separates
   them. The `PSX.EXE` alternative is the one place a PS1 disc has no `SYSTEM.CNF`. Fig confirms
   it against its compat discs before the row is final.
