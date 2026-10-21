@@ -129,6 +129,9 @@ generator emits it from site `a929266`.
 
 ### Shared extensions: the disc probe
 
+This is launcher v1.6.0's rule. [DISC-PROBE.md](DISC-PROBE.md) replaces it from the next disc
+fruit's ship (no lowest-number fallback, CHDs probed, Saturn and Dreamcast rows).
+
 Several disc fruits list the same extensions. When more than one installed fruit plays a file in
 an extra folder (launcher v1.6.0 and later), the launcher reads a few KB of the file to see which
 console it is for, and gives it to the fruit whose `system` is that console's:
