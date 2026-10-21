@@ -1,0 +1,2 @@
+# Synthetic test discs: byte for byte, never line-ending converted.
+testdata/** -text
